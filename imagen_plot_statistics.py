@@ -29,11 +29,10 @@ class plot_demographic:
     # Depends on other Session, it can add the Session and DATA from here.
     # def load_df
     """
-    def __init__(self, DF):
+    def __init__(self, DF, COL):
         self.DF = DF
-        self.Columns = list(self.DF.columns[:-3])
-        self.Target = list(self.DF.columns[-1:])
-        self.Title = list(self.DF.columns[:-3])
+        self.Columns = list(COL[:-3])
+        self.Target = list(COL[-1:])
 
     def histogram(self, bins = 10):
         """
@@ -89,7 +88,7 @@ class plot_demographic:
                 Violinplot
         """
         columns  = self.Columns       
-        title = self.Title
+        title = self.Columns
         
         # violin plot
         sns.set(style="whitegrid", font_scale=1.5)
@@ -149,8 +148,7 @@ class plot_demographic:
         
         """
         # later divided into one Categorical way, the other numerical
-        self.histogram()
-        # self.histogram(bins = False)
+        self.histogram(bins)
         self.pairplot()
         self.violinplot()
         self.catplot()
