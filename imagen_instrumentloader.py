@@ -1,8 +1,6 @@
 #################################################################################
-"""
-IMAGEN Instrument Loader using H5DF file in all Session.
-"""
-# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 16th. August. 2021
+""" IMAGEN Instrument Loader using H5DF file in all Session """
+# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 16th August 2021
 #
 import os
 import h5py
@@ -11,8 +9,6 @@ import numpy as np
 
 class IMAGEN_instrument:
     def __init__(self, DATA_DIR="/ritter/share/data/IMAGEN"):
-        # Set the directory path: IMAGEN
-        self.DATA_DIR = DATA_DIR
         """ Set up path
         
         Parameters
@@ -21,7 +17,9 @@ class IMAGEN_instrument:
             Directory IMAGEN absolute path
         
         """
-
+        # Set the directory path: IMAGEN
+        self.DATA_DIR = DATA_DIR
+        
     def load_HDF5(self, h5py_file):
         """ Generate the list,
         all subject (ALL), healthy control (HC),
