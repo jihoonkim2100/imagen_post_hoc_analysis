@@ -3,7 +3,7 @@
 # Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 16th August 2021
 #
 import math
-import pandas
+import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -170,7 +170,7 @@ class IMAGEN_descriptive:
                         inner="quartile", data = self.DF, kind='violin',
                         split=True, height=4, aspect=.7, palette="Set2")
             
-    def barplot(self, save=False):
+    def categorical_plot(self, save=False):
         """ Plot the barplot
         
         Parameters
@@ -190,6 +190,25 @@ class IMAGEN_descriptive:
         >>> plot_binge_FU3_NEO.barplot(save=False)
         
         """
+        columns = self.Columns
+        # Table of nicotin dependence
+        nd_class = pd.crosstab(index=self.DF["Class"], 
+                               columns=self.DF["Nicotine dependence"],
+                               margins=True)   # Include row and column totals
+
+        nd_class.columns = ["less dependent","moderately dependent", "highly dependent", "coltotal"]
+        nd_class.index= ["HC","AAM","rowtotal"]
+        freq_nd_class = nd_class/nd_class.loc["rowtotal","coltotal"]
+
+        print(f"{nd_class} \n \n {freq_nd_class} \n")
+        
+        ax = sns.countplot(y=columns[0], hue="Class", data=self.DF, palette="Set2")
+        
+        s = sns.catplot(y=columns[0], hue="Class", col="Sex", palette="Set2",
+                        data=self.DF, kind="count", height=4, aspect=.7);
+        
+        c = sns.catplot(y=columns[0], hue="Class", col="Site", palette="Set2",
+                        data=self.DF, kind="count", height=4, aspect=.7);
         
         
     def to_pdf(self):
