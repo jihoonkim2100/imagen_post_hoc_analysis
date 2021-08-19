@@ -6,6 +6,7 @@ import math
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from scipy.stats import shapiro, levene, ttest_ind, bartlett
 
 class IMAGEN_descriptive:
     """ Plot the demographic statistics """
@@ -139,6 +140,7 @@ class IMAGEN_descriptive:
             sns.violinplot(x="Class", y=j, hue='Sex', data=self.DF,
                            order=['HC', 'AAM'], inner="quartile",
                            ax = axes[i+1], split=True, palette="Set2")
+        #print(self.DF.groupby("Class")[columns].mean())
 
     def catplot(self, save=False):
         """ Plot the catplot
@@ -196,8 +198,8 @@ class IMAGEN_descriptive:
                                columns=self.DF["Nicotine dependence"],
                                margins=True)   # Include row and column totals
 
-        nd_class.columns = ["less dependent","moderately dependent", "highly dependent", "coltotal"]
-        nd_class.index= ["HC","AAM","rowtotal"]
+        nd_class.columns = ["highly dependent", "less dependent","moderately dependent", "coltotal"]
+        nd_class.index= ["AAM","HC","rowtotal"]
         freq_nd_class = nd_class/nd_class.loc["rowtotal","coltotal"]
 
         print(f"{nd_class} \n \n {freq_nd_class} \n")
@@ -273,9 +275,31 @@ class IMAGEN_inference(IMAGEN_descriptive):
         self.Columns = list(COL[:-3])
         self.Target = list(COL[-1:])
         
-    def t_test(self):
-        pass
-    
+    def inference_statistics(self):
+        for mean in self.Columns:
+            print("-"*10, mean)
+            myAAM = list(self.DF[self.DF['Class'] == 'AAM'][mean].values)
+            AAM = [x for x in myAAM if pd.isnull(x) == False]
+            myHC = list(self.DF[self.DF['Class'] == 'HC'][mean].values)    
+            HC = [x for x in myHC if pd.isnull(x) == False]
+            
+            # Shapiro-Wilks
+            normal1 = shapiro(AAM)
+            normal2 = shapiro(HC)
+            # Levene test
+            normal3 = levene(AAM,HC)
+            # bartlett test
+            variance = bartlett(AAM, HC)
+            # ttest
+            ttest1 = ttest_ind(AAM, HC)
+            ttest2 = ttest_ind(AAM, HC, equal_var=False)
+            print(f'Shapiro-Wilks AAM: {normal1} \n'
+                  f'Shapiro-Wilks HHC: {normal2} \n'
+                  f'Levene test:       {normal3} \n'
+                  f'Bartlett test:     {variance} \n'
+                  f'T test:            {ttest1} \n'
+                  f'T test:            {ttest2} \n')
+            
     def ANOVA(self):
         pass
 
@@ -284,10 +308,10 @@ class IMAGEN_inference(IMAGEN_descriptive):
     
     def __str__(self):
         """ Print the Inference statistics"""
-        return 'Compute 1. histogram: '+ str(self.Columns) \
-               +"\n"+'compute 2. t-test: '+ str(self.Columns) \
-               +'\n'+'Compute 3. ANOVA: '+ str(self.Columns) \
-               +'\n'+'Compute 4. chi_squared: '+ str(self.Columns)
+        return 'Compute 1. normality check: '+ str(self.Columns) \
+               +"\n"+'compute 2. t-test: '+ str(self.Columns)# \
+               #+'\n'+'Compute 3. ANOVA: '+ str(self.Columns) \
+               #+'\n'+'Compute 4. chi_squared: '+ str(self.Columns)
     
 class IMAGEN_statistics(IMAGEN_inference):
     """ Summary of Descriptive, Inference Statistics """
