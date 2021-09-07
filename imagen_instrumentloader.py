@@ -1,13 +1,13 @@
 #################################################################################
 """ IMAGEN Instrument Loader using H5DF file in all Session """
-# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 16th August 2021
+# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 7th September 2021
 #
 import os
 import h5py
 import pandas as pd
 import numpy as np
 
-class IMAGEN_instrument:
+class Instrument_loader:
     def __init__(self, DATA_DIR="/ritter/share/data/IMAGEN"):
         """ Set up path
         
@@ -139,6 +139,9 @@ class IMAGEN_instrument:
         # ID, Sex, Site, Class columns           #
         # -------------------------------------- #
         DF_2 = self.DF.set_index('ID').reindex(self.ALL)
+        DF_2['Data'] = self.h5py_file[:-3]
+        DF_2['Session'] = self.SESSION
+        DF_2['ID'] = DF_2.index
         DF_2['Sex'] = self.SEX
         DF_2['Site'] = self.SITE
         DF_2['Class'] = self.CLASS
@@ -162,7 +165,8 @@ class IMAGEN_instrument:
             self.Variables = [
                 'Neuroticism mean','Extroversion mean','Openness mean',
                 'Agreeableness mean','Conscientiousness mean',
-                'Sex','Site','Class']
+                'Session','Data','ID','Sex','Site','Class'
+            ]
         
         if self.DATA == 'SURPS':
             # Rename the columns
@@ -178,103 +182,13 @@ class IMAGEN_instrument:
             self.Variables = [
                 'Hopelessness mean','Anxiety sensitivity mean',
                 'Impulsivity mean', 'Sensation seeking mean',
-                'Sex', 'Site', 'Class']    
+                'Data','Session','ID','Sex', 'Site', 'Class'
+            ]    
 
         # -------------------------------------- #
         # ROI Columns: Socio-economic profile    #
         # -------------------------------------- #
-  
-        if self.DATA == 'LEQ':
-            # Rename the columns
-            LEQ = DF_2.rename(
-                columns = {
-                    # Mean valence of events
-                    "family_valence":"Family valence",
-                    "accident_valence":"Accident valence",
-                    "sexuality_valence":"Sexuality valence",
-                    "autonomy_valence":"Autonomy valence",
-                    "devience_valence":"Devience valence",
-                    "relocation_valence":"Relocation valence",
-                    "distress_valence":"Distress valence",
-                    "noscale_valence":"Noscale valence",
-                    "overall_valence":"Overall valence",
-                    # Mean frequency since last IMAGEN assessment
-                    "family_ever_meanfreq":"Family ever meanfrequency",
-                    "accident_ever_meanfreq":"Accident ever meanfrequency",
-                    "sexuality_ever_meanfreq":"Sexuality ever meanfrequency",
-                    "autonomy_ever_meanfreq":"Autonomy ever meanfrequency",
-                    "devience_ever_meanfreq":"Devience ever meanfrequency",
-                    "relocation_ever_meanfreq":"Relocation ever meanfrequency",
-                    "distress_ever_meanfreq":"Distress ever meanfrequency",
-                    "noscale_ever_meanfreq":"Noscale ever meanfrequency",
-                    "overall_ever_meanfreq":"Overall ever meanfrequency",
-                    # Frequency since last IMAGEN
-                    "family_ever_freq":"Family ever frequency",
-                    "accident_ever_freq":"Accident ever frequency",
-                    "sexuality_ever_freq":"Sexuality ever frequency",
-                    "autonomy_ever_freq":"Autonomy ever frequency",
-                    "devience_ever_freq":"Devience ever frequency",
-                    "relocation_ever_freq":"Relocation ever frequency",
-                    "distress_ever_freq":"Distress ever frequency",
-                    "noscale_ever_freq":"Noscale ever frequency",
-                    "overall_ever_freq":"Overall ever frequency",
-                }
-            )
 
-            if self.SESSION == 'BL':
-# ---------------------- BL needed new columns Year --------------------------- #
-                NEW_DF = LEQ
-#                 NEW_DF = LEQ.rename(
-#                     columns={
-                        
-#                     }
-#                 )
-                self.Variables = [
-                    'Family valence','Accident valence','Sexuality valence',
-                    'Autonomy valence','Devience valence','Relocation valence',
-                    'Distress valence','Noscale valence','Overall valence',
-                    'Family ever meanfrequency','Accident ever meanfrequency',
-                    'Sexuality ever meanfrequency','Autonomy ever meanfrequency',
-                    'Devience ever meanfrequency','Relocation ever meanfrequency',
-                    'Distress ever meanfrequency','Noscale ever meanfrequency',
-                    'Overall ever meanfrequency','Family ever frequency',
-                    'Accident ever frequency','Sexuality ever frequency',
-                    'Devience ever frequency','Relocation ever frequency',
-                    'Distress ever frequency','Noscale ever frequency',
-                    'Overall ever frequency','Sex', 'Site', 'Class']  
-            else:
-                NEW_DF = LEQ.rename(
-                    columns = {
-                        # Mean age at occurance
-                        "family_age_mean":"Family age mean",
-                        "accident_age_mean":"Accident age mean",
-                        "sexuality_age_mean":"Sexuality age mean",
-                        "autonomy_age_mean":"Autonomy age mean",
-                        "devience_age_mean":"Devience age mean",
-                        "relocation_age_mean":"Relocation age mean",
-                        "distress_age_mean":"Distress age mean",
-                        "noscale_age_mean":"Noscale age mean",
-                        "overall_age_mean":"Overall age mean",
-                    }
-                )
-                # Set the roi variables
-                self.Variables = [
-                    'Family valence','Accident valence','Sexuality valence',
-                    'Autonomy valence','Devience valence','Relocation valence',
-                    'Distress valence','Noscale valence','Overall valence',
-                    'Family age mean','Accident age mean','Sexuality age mean',
-                    'Autonomy age mean','Devience age mean','Relocation age mean',
-                    'Distress age mean','Noscale age mean','Overall age mean',
-                    'Family ever meanfrequency','Accident ever meanfrequency',
-                    'Sexuality ever meanfrequency','Autonomy ever meanfrequency',
-                    'Devience ever meanfrequency','Relocation ever meanfrequency',
-                    'Distress ever meanfrequency','Noscale ever meanfrequency',
-                    'Overall ever meanfrequency','Family ever frequency',
-                    'Accident ever frequency','Sexuality ever frequency',
-                    'Devience ever frequency','Relocation ever frequency',
-                    'Distress ever frequency','Noscale ever frequency',
-                    'Overall ever frequency','Sex', 'Site', 'Class']    
- 
         if self.DATA == 'CTQ':
             emot_abuse = ['CTQ_3','CTQ_8','CTQ_14','CTQ_18','CTQ_25']
             phys_abuse = ['CTQ_9','CTQ_11','CTQ_12','CTQ_15','CTQ_17']
@@ -300,34 +214,153 @@ class IMAGEN_instrument:
             self.Variables = [
                 'Emotional abuse sum','Physical abuse sum','Sexsual abuse sum',
                 'Emotional neglect sum','Physical neglect sum','Denial sum',
-                'Sex','Site','Class'
+                'Data','Session','ID','Sex','Site','Class'
             ]
 
+        if self.DATA == 'LEQ':
+            # Rename the columns
+            NEW_DF = DF_2.rename(
+                columns = {
+                    # Mean valence of events
+                    "family_valence":"Family valence",
+                    "accident_valence":"Accident valence",
+                    "sexuality_valence":"Sexuality valence",
+                    "autonomy_valence":"Autonomy valence",
+                    "devience_valence":"Devience valence",
+                    "relocation_valence":"Relocation valence",
+                    "distress_valence":"Distress valence",
+                    "noscale_valence":"Noscale valence",
+                    "overall_valence":"Overall valence",
+                    # Mean frequency lifetime
+                    "family_ever_meanfreq":"Family mean frequency",
+                    "accident_ever_meanfreq":"Accident mean frequency",
+                    "sexuality_ever_meanfreq":"Sexuality mean frequency",
+                    "autonomy_ever_meanfreq":"Autonomy mean frequency",
+                    "devience_ever_meanfreq":"Devience mean frequency",
+                    "relocation_ever_meanfreq":"Relocation mean frequency",
+                    "distress_ever_meanfreq":"Distress mean frequency",
+                    "noscale_ever_meanfreq":"Noscale mean frequency",
+                    "overall_ever_meanfreq":"Overall mean frequency",
+                }
+            )
+            # Set the roi variables
+            self.Variables = [
+                'Family valence','Accident valence','Sexuality valence',
+                'Autonomy valence','Devience valence','Relocation valence',
+                'Distress valence','Noscale valence','Overall valence',
+                'Family mean frequency','Accident mean frequency',
+                'Sexuality mean frequency','Autonomy mean frequency',
+                'Devience mean frequency','Relocation mean frequency',
+                'Distress mean frequency','Noscale mean frequency',
+                'Overall mean frequency','Data','Session','ID','Sex','Site','Class']
+
         if self.DATA == 'PBQ':
-# ------------------- Categorical data selction needed ------------------------ #
-            # Rename the columns
+            # Generate the columns
+            def test(x):
+                if x == 0: return 'No'
+                elif x == 1: return 'Yes'
+                else: return np.NaN
+            def day(x):
+                if x == 2: return 'yes, every day'
+                elif x == 1: return 'yes, on occasion'
+                elif x == 0: return 'no, not at all'
+                else: return np.NaN
+            def age(x):
+                if x == -1: return np.NaN
+                elif x == -2: return np.NaN
+                else: return x
+            def cigarettes(x):
+                if x == 1: return 'Less than 1 cigarette per week'
+                elif x == 2: return 'Less than 1 cigarette per day'
+                elif x == 3: return '1-5 cigarettes per day'
+                elif x == 8: return '6-10 cigarettes per day'
+                elif x == 15: return '11-20 cigarettes per day'
+                elif x == 25: return '21-30 cigarettes per day'
+                elif x == 30: return 'More than 30 cigarettes per day'
+                else: return np.NaN
+            def alcohol(x):
+                if x == 1: return 'Monthly or less'
+                elif x == 2: return 'Two to four times a month'
+                elif x == 3: return 'Two to three times a week'
+                elif x == 4: return 'Four or more times a week'
+                else: return np.NaN
+            def drinks(x):
+                if x == 0: return '1 or 2'
+                elif x == 1: return '3 or 4'
+                elif x == 2: return '5 or 6'
+                elif x == 3: return '7 to 9'
+                elif x == 4: return '10 or more'
+                else: return np.NaN
+            def stage(x):
+                if x == 1: return 'first trimester'
+                elif x == 2: return 'second trimester'
+                elif x == 3: return 'third trimester'
+                elif x == 12: return 'first and second'
+                elif x == 23: return 'second and third'
+                elif x == 13: return 'first and third'
+                elif x == 4: return 'whole pregnancy'
+                else: return np.NaN
+            
+            DF_2["pbq_03"] = DF_2['pbq_03'].apply(test)
+            DF_2['pbq_03a'] = DF_2['pbq_03a'].apply(day)
+            DF_2['pbq_03b'] = DF_2['pbq_03b'].apply(age)
+            DF_2["pbq_05"] = DF_2['pbq_05'].apply(test)
+            DF_2["pbq_06"] = DF_2['pbq_06'].apply(test)
+            DF_2["pbq_12"] = DF_2['pbq_12'].apply(test)
+            DF_2["pbq_13"] = DF_2['pbq_13'].apply(test)
+            DF_2["pbq_03c"] = DF_2['pbq_03c'].apply(cigarettes)
+            DF_2["pbq_05a"] = DF_2['pbq_05a'].apply(cigarettes)
+            DF_2["pbq_05b"] = DF_2['pbq_05b'].apply(cigarettes)
+            DF_2["pbq_05c"] = DF_2['pbq_05c'].apply(cigarettes)
+            DF_2["pbq_06a"] = DF_2['pbq_06a'].apply(cigarettes)
+            DF_2["pbq_13a"] = DF_2['pbq_13a'].apply(alcohol)
+            DF_2["pbq_13b"] = DF_2['pbq_13b'].apply(drinks)
+            DF_2["pbq_13g"] = DF_2['pbq_13g'].apply(stage)    
             NEW_DF = DF_2
-            # Set the roi variables
-            self.Variables = [
-                'Sex', 'Site', 'Class'
-            ]
         
-        if self.DATA == 'BMI':
-# ------------------------ BMI calculation needed ----------------------------- #
-            # Rename the columns
-            NEW_DF = DF_2
             # Set the roi variables
             self.Variables = [
-                'Sex', 'Site', 'Class'
+                'pbq_03','pbq_03a','pbq_03b','pbq_03c','pbq_05',
+                'pbq_05a','pbq_05b','pbq_05c','pbq_06','pbq_06a',
+                'pbq_12','pbq_13','pbq_13a','pbq_13b','pbq_13g',
+                'Data','Session','ID','Sex', 'Site', 'Class'
             ]
         
         if self.DATA == 'GEN':
-            # Rename the columns
-# ------------------ Categorical data selection needed ------------------------ #
+            # Generate the columns
+            def disorder(x):
+                if x == 'SCZ': return 'Schizophrenia'
+                elif x == 'SCZAD': return 'Schizoaffective Disorder'
+                elif x == 'DPR_R': return 'Major Depression recurrent'
+                elif x == 'DPR_SE': return 'Major Depression single episode'
+                elif x == 'BIP_I': return 'Bipolar I Disorder'
+                elif x == 'BIP_II': return 'Bipolar II Disorder'
+                elif x == 'OCD': return 'Obessive-compulsive Disroder'
+                elif x == 'ANX': return 'Anxiety Disorder'
+                elif x == 'EAT': return 'Eating Disorder'
+                elif x == 'ALC': return 'Alcohol problems'
+                elif x == 'DRUG': return 'Drug problems'
+                elif x == 'SUIC': return 'Suicide / Suicidal Attempt'
+                elif x == 'OTHER': return 'Other'
+                else: return np.NaN
+            
+            DF_2['Disorder_PF_1'] = DF_2['Disorder_PF_1'].apply(disorder)
+            DF_2['Disorder_PF_2'] = DF_2['Disorder_PF_2'].apply(disorder)
+            DF_2['Disorder_PF_3'] = DF_2['Disorder_PF_3'].apply(disorder)
+            DF_2['Disorder_PF_4'] = DF_2['Disorder_PF_4'].apply(disorder)
+            DF_2['Disorder_PM_1'] = DF_2['Disorder_PM_1'].apply(disorder)
+            DF_2['Disorder_PM_2'] = DF_2['Disorder_PM_2'].apply(disorder)
+            DF_2['Disorder_PM_3'] = DF_2['Disorder_PM_3'].apply(disorder)
+            DF_2['Disorder_PM_4'] = DF_2['Disorder_PM_4'].apply(disorder)
+            DF_2['Disorder_PM_5'] = DF_2['Disorder_PM_5'].apply(disorder)
+            DF_2['Disorder_PM_6'] = DF_2['Disorder_PM_6'].apply(disorder)
             NEW_DF = DF_2
+            
             # Set the roi variables
             self.Variables = [
-                'Sex', 'Site', 'Class'
+                'Disorder_PF_1','Disorder_PF_2','Disorder_PF_3','Disorder_PF_4',
+                'Disorder_PM_1','Disorder_PM_2','Disorder_PM_3','Disorder_PM_4',
+                'Disorder_PM_5','Disorder_PM_6','Session','Data','Sex', 'Site', 'Class'
             ]
         
         if self.DATA == 'CTS':
@@ -345,7 +378,8 @@ class IMAGEN_instrument:
             self.Variables = [
                 'Assault mean','Injury mean','Negotiation mean',
                 'Psychological aggression mean','Sexual coercion mean',
-                'Sex','Site','Class']
+                'Data','Session','ID','Sex','Site','Class'
+            ]
 
         # -------------------------------------- #
         # ROI Columns: Other co-morbidities      #
@@ -362,12 +396,12 @@ class IMAGEN_instrument:
             NEW_DF = DF_2
             # Set the roi variables
             self.Variables = [
-                'Nicotine dependence','Sex','Site','Class'
+                'Nicotine dependence','Data','Session','ID','Sex','Site','Class'
             ]       
 
 #         def DAST_SESSION(SESSION):
 #             if SESSION == 'FU3':
-#                 Variables = ['ftnd_sum', 'sex', 'site', 'class']
+#                 Variables = ['sex', 'site', 'class']
 #                 DATA_DF = self.NEW_DF[Variables]
 #                 return Variables, DATA_DF
 #             if 'DAST' == self.DATA: # 'DAST'
@@ -385,7 +419,7 @@ class IMAGEN_instrument:
 
 #         def DMQ_SESSION(SESSION):
 #             if SESSION == 'FU3':
-#                 Variables = ['ftnd_sum', 'sex', 'site', 'class']
+#                 Variables = ['sex', 'site', 'class']
 #                 DATA_DF = self.NEW_DF[Variables]
 #                 return Variables, DATA_DF
 #             if 'DMQ' == self.DATA: # 'DMQ'
@@ -469,10 +503,10 @@ class IMAGEN_instrument:
         if viz == True:
             print(f"{'-'*83} \n{self.__str__()} \n{'-'*83}")
             print(f"{self.NEW_DF.info(), self.NEW_DF.describe()}")
-        return self.NEW_DF, self.Variables
+        return self.NEW_DF
 
-    def to_instrument(self, h5py_file, SESSION, instrument_file,
-                      DATA, save=False, viz=False):
+    def get_instrument(self, h5py_file, SESSION, instrument_file,
+                       DATA, save=False, viz=False):
         """ Load the HDF5, INSTRUMENT. And generate the new instruemnt
 
         Parameters
@@ -506,20 +540,20 @@ class IMAGEN_instrument:
         Examples
         --------
         >>> from imagen_instrumentloader import *
-        >>> binge_FU3_NEO = IMAGEN_instrument()
-        >>> df_binge_FU3_NEO, col_binge_FU3_NEO = binge_FU3_NEP.to_instrument(
+        >>> NEO = IMAGEN_instrument()
+        >>> df_binge_FU3_NEO = NEO.get_instrument(
         ...     "newlbls-fu3-espad-fu3-19a-binge-n650.h5", # h5files
         ...     "FU3",                                     # session
         ...     "IMAGEN-IMGN_NEO_FFI_FU3.csv",             # instrument
         ...     "NEO",                                     # roi name
         ...     save = False,                              # save
-        ...     viz = True)                                # summary
+        ...     viz = False)                               # summary
         
         """
         self.load_HDF5(h5py_file)
         self.load_INSTRUMENT(SESSION, DATA, instrument_file)
         self.generate_new_instrument(save, viz)
-        return self.NEW_DF, self.Variables
+        return self.NEW_DF
     
     def __str__(self):
         """ Print the instrument loader steps """
@@ -541,8 +575,8 @@ class IMAGEN_instrument:
                + "\n        The dataset contains " + str(self.NEW_DF.shape[0]) \
                + " samples and " + str(self.NEW_DF.shape[1]) + " columns" \
                + "\n        Variables = " + str(self.Variables)
-
-class IMAGEN_quick:
+    
+class IMAGEN_instrument(Instrument_loader):
     def __init__(self, DATA_DIR="/ritter/share/data/IMAGEN"):
         """ Set up path
         
@@ -553,8 +587,47 @@ class IMAGEN_quick:
         
         """
         self.DATA_DIR = DATA_DIR
+    
+    def to_instrument(self, merge_list, merge_key, save=False):
+        """ Merge the instrument files
         
-    def to_instrument(self, instrument_path, viz=False):
+        Parameters
+        ----------
+        merge_list : list
+            The IMAGEN instruments list
+            
+        merge_key : list
+            The IMAGEN instruments group name: BL, FU1, FU2, FU3
+        
+        save : Boolean, optional
+            If it is true, save the file
+
+        Returns
+        -------        
+        self.DF : pandas.dataframe
+            The instrument file (*.csv)
+        
+        Examples
+        --------
+        >>> from imagen_instrumentloader import *
+        >>> binge_NEO = IMAGEN_instrument()
+        >>> df_binge_FU3_NEO = binge_NEO.to_instrument(
+        ...     "IMAGEN-IMGN_NEO_FFI_FU3.csv",             # instrument
+        ...     viz = True)                                # summary        
+        
+        """
+        NEW2_DF = pd.concat(merge_list, keys=merge_key)
+        if save == True:
+            phenotype = self.h5py_file.replace(".h5", "")
+            save_absolute_path = f"{self.DATA_DIR}/Instrument/"+\
+                                 f"{phenotype}_{self.DATA}.csv"
+            # set the save option
+            if not os.path.isdir(os.path.dirname(save_absolute_path)):
+                os.makedirs(os.path.dirname(save_absolute_path))
+            NEW2_DF.to_csv(save_absolute_path, index=None)
+        return NEW2_DF
+        
+    def read_instrument(self, instrument_path, viz=False):
         """ Select instrument file and get the columns
         
         Parameters
@@ -570,27 +643,24 @@ class IMAGEN_quick:
         self.DF : pandas.dataframe
             The instrument file (*.csv)
         
-        self.VARIABLES : string
-            Instruments columns: ROI Columns, Sex, Site, Class
-
         Examples
         --------
         >>> from imagen_instrumentloader import *
-        >>> binge_FU3_NEO = IMAGEN_qurick()
-        >>> df_binge_FU3_NEO, col_binge_FU3_NEO = binge_FU3_NEP.to_instrument(
-        ...     "IMAGEN-IMGN_NEO_FFI_FU3.csv",             # instrument
-        ...     viz = True)                                # summary        
+        >>> NEO = IMAGEN_instrument()
+        >>> df_binge_FU3_NEO = NEO.read_instrument(
+        ...     "IMAGEN-IMGN_NEO_FFI_FU3.csv", # instrument
+        ...     viz = True)                    # summary        
         
         """
         self.instrument_path = instrument_path
         instrument_path = f"{self.DATA_DIR}/Instrument/{instrument_path}"
-        self.DF = pd.read_csv(instrument_path, low_memory=False).set_index('ID')
+        self.DF = pd.read_csv(instrument_path, low_memory=False)
         self.VARIABLES = list(self.DF.columns)
         
         if viz == True:
             print(f"{'-'*83} \n{self.__str__()} \n{'-'*83}")
             print(f"{self.DF.info(), self.DF.describe()}")
-        return self.DF, self.VARIABLES
+        return self.DF
     
     def __str__(self):
         """ Print the instrument loader steps """
