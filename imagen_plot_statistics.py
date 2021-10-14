@@ -1,6 +1,6 @@
 #################################################################################
 """ IMAGEN Instrument Summary Statistic """
-# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 8th September 2021
+# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 12th October 2021
 #
 import math
 import pandas as pd
@@ -11,6 +11,192 @@ from statannot import add_stat_annotation
 import warnings
 warnings.filterwarnings('ignore')
 sns.set_style("darkgrid")
+
+def ml_Prob_plot(IN, train, test, col):
+    fig, axes = plt.subplots(nrows=3, ncols=6, figsize=(2*len(col), 16))
+    
+    data = train
+    data_M = data[data['Sex']!='Female']
+    data_F = data[data['Sex']=='Female']
+    
+    for i, data in enumerate([data, data_M, data_F]):
+        # Model count
+        ax = sns.countplot(data=data, x="Model", 
+                           hue='Prob', #hue_order=['TP & FP', 'TN & FN'],
+                           ax=axes[i,0], palette="Set2")
+        if i == 0:
+            axes[i,0].set_title(f'All: Session {data["Session"].values[0]}' +
+                                f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+            
+        elif i==1:
+            axes[i,0].set_title(f'Male: Session {data["Session"].values[0]}' +
+                                f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+        else:
+            axes[i,0].set_title(f'Female: Session {data["Session"].values[0]}' +
+                                f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+    
+        ax.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+        for p in ax.patches:
+            ax.annotate('{:}'.format(p.get_height()), (p.get_x()+0.15, p.get_height()))
+            
+        axes[i,0].legend(title='Model',loc='lower left')
+
+        # Model prediction = True
+        data2 = data[data['Model PN']=='TP & FP']
+        ax3 = sns.violinplot(data=data2, x="Model",
+                             y=col, hue="Class", hue_order=['HC','AAM'],
+                             inner="quartile", split=True,
+                             ax = axes[i,1], palette="Set3")
+    
+        ax3.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+        axes[i,1].set_title(f'{IN} - {col}, Validation - Positive')
+
+        add_stat_annotation(ax3, data=data2, x='Model',
+                            y=col, test='t-test_ind',
+                            hue="Class", hue_order = ['HC', 'AAM'],
+                            box_pairs=[(("GB","HC"),("GB","AAM")),
+                                       (("LR","HC"),("LR","AAM")),
+                                       (("SVM-lin","HC"),("SVM-lin","AAM")),
+                                       (("SVM-rbf","HC"),("SVM-rbf","AAM"))],
+                            loc='inside', verbose=2, line_height=0.1)
+        
+#         add_stat_annotation(ax3, data=data2, x='Model',
+#                             y=col, test='t-test_ind',
+#                             hue="Class", hue_order = ['HC', 'AAM'],
+#                             box_pairs=[(("('X', 'Binge', 'cb', 'GB')","HC"),
+#                                         ("('X', 'Binge', 'cb', 'GB')","AAM")),
+#                                        (("('X', 'Binge', 'cb', 'LR')","HC"),
+#                                         ("('X', 'Binge', 'cb', 'LR')","AAM")),
+#                                        (("('X', 'Binge', 'cb', 'SVM-lin')","HC"),
+#                                         ("('X', 'Binge', 'cb', 'SVM-lin')","AAM")),
+#                                        (("('X', 'Binge', 'cb', 'SVM-rbf')","HC"),
+#                                         ("('X', 'Binge', 'cb', 'SVM-rbf')","AAM"))],
+#                             loc='inside', verbose=2, line_height=0.1)
+    
+        # Model prediction = False    
+        data3 = data[data['Model PN']=='TN & FN']
+        ax2 = sns.violinplot(data=data3, x="Model",
+                             y=col, hue="Class", hue_order=['HC','AAM'],
+                             inner="quartile", split=True,
+                             ax = axes[i,2], palette="Set3")
+    
+        ax2.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+        axes[i,2].set_title(f'{IN} - {col}, Validation - Negative')
+        add_stat_annotation(ax2, data=data2, x='Model',
+                            y=col, test='t-test_ind',
+                            hue="Class", hue_order = ['HC', 'AAM'],
+                            box_pairs=[(("GB","HC"),("GB","AAM")),
+                                       (("LR","HC"),("LR","AAM")),
+                                       (("SVM-lin","HC"),("SVM-lin","AAM")),
+                                       (("SVM-rbf","HC"),("SVM-rbf","AAM"))],
+                            loc='inside', verbose=2, line_height=0.1)    
+#         add_stat_annotation(ax2, data=data3, x='Model',
+#                             y=col, test='t-test_ind',
+#                             hue="Prob", hue_order = ['HC', 'AAM'],
+#                             box_pairs=[(("('X', 'Binge', 'cb', 'GB')","HC"),
+#                                         ("('X', 'Binge', 'cb', 'GB')","AAM")),
+#                                        (("('X', 'Binge', 'cb', 'LR')","HC"),
+#                                         ("('X', 'Binge', 'cb', 'LR')","AAM")),
+#                                        (("('X', 'Binge', 'cb', 'SVM-lin')","HC"),
+#                                         ("('X', 'Binge', 'cb', 'SVM-lin')","AAM")),
+#                                        (("('X', 'Binge', 'cb', 'SVM-rbf')","HC"),
+#                                         ("('X', 'Binge', 'cb', 'SVM-rbf')","AAM"))],
+#                             loc='inside', verbose=2, line_height=0.1)
+    
+    data = test
+    data_M = data[data['Sex']!='Female']
+    data_F = data[data['Sex']=='Female']
+    
+    for i, data in enumerate([data, data_M, data_F]):
+        # Model count
+        ax = sns.countplot(data=data, x="Model", 
+                           hue='Prob', #hue_order=['TP & FP', 'TN & FN'],
+                           ax=axes[i,3], palette="Set2")
+        if i == 0:
+            axes[i,3].set_title(f'All: Session {data["Session"].values[0]}' +
+                                f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+            
+        elif i==1:
+            axes[i,3].set_title(f'Male: Session {data["Session"].values[0]}' +
+                                f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+        else:
+            axes[i,3].set_title(f'Female: Session {data["Session"].values[0]}' +
+                                f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+    
+        ax.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+        for p in ax.patches:
+            ax.annotate('{:}'.format(p.get_height()), (p.get_x()+0.15, p.get_height()))
+            
+        axes[i,3].legend(title='Model',loc='lower left')
+
+        # Model prediction = True
+        data2 = data[data['Model PN']=='TP & FP']
+        ax3 = sns.violinplot(data=data2, x="Model",
+                             y=col, hue="Class", hue_order=['HC','AAM'],
+                             inner="quartile", split=True,
+                             ax = axes[i,4], palette="Set3")
+    
+        ax3.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+        axes[i,4].set_title(f'{IN} - {col}, Test - Positive')
+        add_stat_annotation(ax3, data=data2, x='Model',
+                            y=col, test='t-test_ind',
+                            hue="Class", hue_order = ['HC', 'AAM'],
+                            box_pairs=[(("GB","HC"),("GB","AAM")),
+                                       (("LR","HC"),("LR","AAM")),
+                                       (("SVM-lin","HC"),("SVM-lin","AAM")),
+                                       (("SVM-rbf","HC"),("SVM-rbf","AAM"))],
+                            loc='inside', verbose=2, line_height=0.1)    
+#         add_stat_annotation(ax3, data=data2, x='Model',
+#                             y=col, test='t-test_ind',
+#                             hue="Class", hue_order = ['HC', 'AAM'],
+#                             box_pairs=[(("('X-Binge', 'cb', 'GB')","HC"),
+#                                         ("('X-Binge', 'cb', 'GB')","AAM")),
+#                                        (("('X-Binge', 'cb', 'LR')","HC"),
+#                                         ("('X-Binge', 'cb', 'LR')","AAM")),
+#                                        (("('X-Binge', 'cb', 'SVM-lin')","HC"),
+#                                         ("('X-Binge', 'cb', 'SVM-lin')","AAM")),
+#                                        (("('X-Binge', 'cb', 'SVM-rbf')","HC"),
+#                                         ("('X-Binge', 'cb', 'SVM-rbf')","AAM"))],
+#                             loc='inside', verbose=2, line_height=0.1)
+    
+        # Model prediction = False    
+        data3 = data[data['Model PN']=='TN & FN']
+        ax2 = sns.violinplot(data=data3, x="Model",
+                             y=col, hue="Class", hue_order=['HC','AAM'],
+                             inner="quartile", split=True,
+                             ax = axes[i,5], palette="Set3")
+    
+        ax2.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+        axes[i,5].set_title(f'{IN} - {col}, Test - Negative')
+        add_stat_annotation(ax2, data=data2, x='Model',
+                            y=col, test='t-test_ind',
+                            hue="Class", hue_order = ['HC', 'AAM'],
+                            box_pairs=[(("GB","HC"),("GB","AAM")),
+                                       (("LR","HC"),("LR","AAM")),
+                                       (("SVM-lin","HC"),("SVM-lin","AAM")),
+                                       (("SVM-rbf","HC"),("SVM-rbf","AAM"))],
+                            loc='inside', verbose=2, line_height=0.1)    
+#         add_stat_annotation(ax2, data=data3, x='Model',
+#                             y=col, test='t-test_ind',
+#                             hue="Class", hue_order = ['HC', 'AAM'],
+#                             box_pairs=[(("('X-Binge', 'cb', 'GB')","HC"),
+#                                         ("('X-Binge', 'cb', 'GB')","AAM")),
+#                                        (("('X-Binge', 'cb', 'LR')","HC"),
+#                                         ("('X-Binge', 'cb', 'LR')","AAM")),
+#                                        (("('X-Binge', 'cb', 'SVM-lin')","HC"),
+#                                         ("('X-Binge', 'cb', 'SVM-lin')","AAM")),
+#                                        (("('X-Binge', 'cb', 'SVM-rbf')","HC"),
+#                                         ("('X-Binge', 'cb', 'SVM-rbf')","AAM"))],
+#                             loc='inside', verbose=2, line_height=0.1)        
+    
+    return [data.groupby(['Model PN','Model','Class'])[col].mean(),
+            data.groupby(['Model PN','Model','Class','Sex'])[col].mean()]
 
 class IMAGEN_descriptive:
     """ Plot the demographic statistics """
@@ -458,16 +644,17 @@ def sc_plot(IN, data, col):
             data.groupby(['Session','Class','Sex'])[col].mean(),
             data.groupby(['Session','Sex'])[col].mean()]
 
-def ml_plot(IN, data, col):
-    fig, axes = plt.subplots(nrows=3, ncols=2+1, figsize=(2*len(col), 16))
+def pd_TF_plot(IN, train, test, col):
+    fig, axes = plt.subplots(nrows=3, ncols=6, figsize=(2*len(col), 16))
     
+    data = train
     data_M = data[data['Sex']!='Female']
     data_F = data[data['Sex']=='Female']
     
     for i, data in enumerate([data, data_M, data_F]):
         # Model count
         ax = sns.countplot(data=data, x="Model", 
-                           hue='Predict', hue_order=[True,False],
+                           hue='Predict TF', hue_order=['TP & TN', 'FP & FN'],
                            ax=axes[i,0], palette="Set2")
         if i == 0:
             axes[i,0].set_title(f'All: Session {data["Session"].values[0]}' +
@@ -488,7 +675,7 @@ def ml_plot(IN, data, col):
         axes[i,0].legend(title='Prediction',loc='lower left')
 
         # Model prediction = True
-        data2 = data[data['Predict']==True]
+        data2 = data[data['Predict TF']=='TP & TN']
         ax3 = sns.violinplot(data=data2, x="Model",
                              y=col, hue="Class", hue_order=['HC','AAM'],
                              inner="quartile", split=True,
@@ -496,7 +683,7 @@ def ml_plot(IN, data, col):
     
         ax3.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
     
-        axes[i,1].set_title(f'{IN} - {col}, True')
+        axes[i,1].set_title(f'{IN} - {col}, Validation - True')
     
         add_stat_annotation(ax3, data=data2, x='Model',
                             y=col, test='t-test_ind',
@@ -512,7 +699,7 @@ def ml_plot(IN, data, col):
                             loc='inside', verbose=2, line_height=0.1)
     
         # Model prediction = False    
-        data3 = data[data['Predict']==False]
+        data3 = data[data['Predict TF']=='FP & FN']
         ax2 = sns.violinplot(data=data3, x="Model",
                              y=col, hue="Class", hue_order=['HC','AAM'],
                              inner="quartile", split=True,
@@ -520,7 +707,7 @@ def ml_plot(IN, data, col):
     
         ax2.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
     
-        axes[i,2].set_title(f'{IN} - {col}, False')
+        axes[i,2].set_title(f'{IN} - {col}, Validation - False')
     
         add_stat_annotation(ax2, data=data3, x='Model',
                             y=col, test='t-test_ind',
@@ -534,6 +721,394 @@ def ml_plot(IN, data, col):
                                        (("('X', 'Binge', 'cb', 'SVM-rbf')","HC"),
                                         ("('X', 'Binge', 'cb', 'SVM-rbf')","AAM"))],
                             loc='inside', verbose=2, line_height=0.1)
+    
+    data = test
+    data_M = data[data['Sex']!='Female']
+    data_F = data[data['Sex']=='Female']
+    
+    for i, data in enumerate([data, data_M, data_F]):
+        # Model count
+        ax = sns.countplot(data=data, x="Model", 
+                           hue='Predict TF', hue_order=['TP & TN', 'FP & FN'],
+                           ax=axes[i,3], palette="Set2")
+        if i == 0:
+            axes[i,3].set_title(f'All: Session {data["Session"].values[0]}' +
+                                f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+            
+        elif i==1:
+            axes[i,3].set_title(f'Male: Session {data["Session"].values[0]}' +
+                                f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+        else:
+            axes[i,3].set_title(f'Female: Session {data["Session"].values[0]}' +
+                                f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+    
+        ax.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+        for p in ax.patches:
+            ax.annotate('{:}'.format(p.get_height()), (p.get_x()+0.15, p.get_height()))
+            
+        axes[i,3].legend(title='Prediction',loc='lower left')
+
+        # Model prediction = True
+        data2 = data[data['Predict TF']=='TP & TN']
+        ax3 = sns.violinplot(data=data2, x="Model",
+                             y=col, hue="Class", hue_order=['HC','AAM'],
+                             inner="quartile", split=True,
+                             ax = axes[i,4], palette="Set3")
+    
+        ax3.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+        axes[i,4].set_title(f'{IN} - {col}, Test - True')
+    
+        add_stat_annotation(ax3, data=data2, x='Model',
+                            y=col, test='t-test_ind',
+                            hue="Class", hue_order = ['HC', 'AAM'],
+                            box_pairs=[(("('X-Binge', 'cb', 'GB')","HC"),
+                                        ("('X-Binge', 'cb', 'GB')","AAM")),
+                                       (("('X-Binge', 'cb', 'LR')","HC"),
+                                        ("('X-Binge', 'cb', 'LR')","AAM")),
+                                       (("('X-Binge', 'cb', 'SVM-lin')","HC"),
+                                        ("('X-Binge', 'cb', 'SVM-lin')","AAM")),
+                                       (("('X-Binge', 'cb', 'SVM-rbf')","HC"),
+                                        ("('X-Binge', 'cb', 'SVM-rbf')","AAM"))],
+                            loc='inside', verbose=2, line_height=0.1)
+    
+        # Model prediction = False    
+        data3 = data[data['Predict TF']=='FP & FN']
+        ax2 = sns.violinplot(data=data3, x="Model",
+                             y=col, hue="Class", hue_order=['HC','AAM'],
+                             inner="quartile", split=True,
+                             ax = axes[i,5], palette="Set3")
+    
+        ax2.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+        axes[i,5].set_title(f'{IN} - {col}, Test - False')
+    
+        add_stat_annotation(ax2, data=data3, x='Model',
+                            y=col, test='t-test_ind',
+                            hue="Class", hue_order = ['HC', 'AAM'],
+                            box_pairs=[(("('X-Binge', 'cb', 'GB')","HC"),
+                                        ("('X-Binge', 'cb', 'GB')","AAM")),
+                                       (("('X-Binge', 'cb', 'LR')","HC"),
+                                        ("('X-Binge', 'cb', 'LR')","AAM")),
+                                       (("('X-Binge', 'cb', 'SVM-lin')","HC"),
+                                        ("('X-Binge', 'cb', 'SVM-lin')","AAM")),
+                                       (("('X-Binge', 'cb', 'SVM-rbf')","HC"),
+                                        ("('X-Binge', 'cb', 'SVM-rbf')","AAM"))],
+                            loc='inside', verbose=2, line_height=0.1)        
+    
+    return [data.groupby(['Predict TF','Model','Class'])[col].mean(),
+            data.groupby(['Predict TF','Model','Class','Sex'])[col].mean()]
+
+def ml_PN_plot(IN, train, test, col):
+    fig, axes = plt.subplots(nrows=3, ncols=6, figsize=(2*len(col), 16))
+    
+    data = train
+    data_M = data[data['Sex']!='Female']
+    data_F = data[data['Sex']=='Female']
+    
+    for i, data in enumerate([data, data_M, data_F]):
+        # Model count
+        ax = sns.countplot(data=data, x="Model", 
+                           hue='Model PN', hue_order=['TP & FP', 'TN & FN'],
+                           ax=axes[i,0], palette="Set2")
+        if i == 0:
+            axes[i,0].set_title(f'All: Session {data["Session"].values[0]}' +
+                                f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+            
+        elif i==1:
+            axes[i,0].set_title(f'Male: Session {data["Session"].values[0]}' +
+                                f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+        else:
+            axes[i,0].set_title(f'Female: Session {data["Session"].values[0]}' +
+                                f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+    
+        ax.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+        for p in ax.patches:
+            ax.annotate('{:}'.format(p.get_height()), (p.get_x()+0.15, p.get_height()))
+            
+        axes[i,0].legend(title='Model',loc='lower left')
+
+        # Model prediction = True
+        data2 = data[data['Model PN']=='TP & FP']
+        ax3 = sns.violinplot(data=data2, x="Model",
+                             y=col, hue="Class", hue_order=['HC','AAM'],
+                             inner="quartile", split=True,
+                             ax = axes[i,1], palette="Set3")
+    
+        ax3.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+        axes[i,1].set_title(f'{IN} - {col}, Validation - Positive')
+    
+        add_stat_annotation(ax3, data=data2, x='Model',
+                            y=col, test='t-test_ind',
+                            hue="Class", hue_order = ['HC', 'AAM'],
+                            box_pairs=[(("('X', 'Binge', 'cb', 'GB')","HC"),
+                                        ("('X', 'Binge', 'cb', 'GB')","AAM")),
+                                       (("('X', 'Binge', 'cb', 'LR')","HC"),
+                                        ("('X', 'Binge', 'cb', 'LR')","AAM")),
+                                       (("('X', 'Binge', 'cb', 'SVM-lin')","HC"),
+                                        ("('X', 'Binge', 'cb', 'SVM-lin')","AAM")),
+                                       (("('X', 'Binge', 'cb', 'SVM-rbf')","HC"),
+                                        ("('X', 'Binge', 'cb', 'SVM-rbf')","AAM"))],
+                            loc='inside', verbose=2, line_height=0.1)
+    
+        # Model prediction = False    
+        data3 = data[data['Model PN']=='TN & FN']
+        ax2 = sns.violinplot(data=data3, x="Model",
+                             y=col, hue="Class", hue_order=['HC','AAM'],
+                             inner="quartile", split=True,
+                             ax = axes[i,2], palette="Set3")
+    
+        ax2.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+        axes[i,2].set_title(f'{IN} - {col}, Validation - Negative')
+    
+        add_stat_annotation(ax2, data=data3, x='Model',
+                            y=col, test='t-test_ind',
+                            hue="Class", hue_order = ['HC', 'AAM'],
+                            box_pairs=[(("('X', 'Binge', 'cb', 'GB')","HC"),
+                                        ("('X', 'Binge', 'cb', 'GB')","AAM")),
+                                       (("('X', 'Binge', 'cb', 'LR')","HC"),
+                                        ("('X', 'Binge', 'cb', 'LR')","AAM")),
+                                       (("('X', 'Binge', 'cb', 'SVM-lin')","HC"),
+                                        ("('X', 'Binge', 'cb', 'SVM-lin')","AAM")),
+                                       (("('X', 'Binge', 'cb', 'SVM-rbf')","HC"),
+                                        ("('X', 'Binge', 'cb', 'SVM-rbf')","AAM"))],
+                            loc='inside', verbose=2, line_height=0.1)
+    
+    data = test
+    data_M = data[data['Sex']!='Female']
+    data_F = data[data['Sex']=='Female']
+    
+    for i, data in enumerate([data, data_M, data_F]):
+        # Model count
+        ax = sns.countplot(data=data, x="Model", 
+                           hue='Model PN', hue_order=['TP & FP', 'TN & FN'],
+                           ax=axes[i,3], palette="Set2")
+        if i == 0:
+            axes[i,3].set_title(f'All: Session {data["Session"].values[0]}' +
+                                f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+            
+        elif i==1:
+            axes[i,3].set_title(f'Male: Session {data["Session"].values[0]}' +
+                                f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+        else:
+            axes[i,3].set_title(f'Female: Session {data["Session"].values[0]}' +
+                                f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+    
+        ax.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+        for p in ax.patches:
+            ax.annotate('{:}'.format(p.get_height()), (p.get_x()+0.15, p.get_height()))
+            
+        axes[i,3].legend(title='Model',loc='lower left')
+
+        # Model prediction = True
+        data2 = data[data['Model PN']=='TP & FP']
+        ax3 = sns.violinplot(data=data2, x="Model",
+                             y=col, hue="Class", hue_order=['HC','AAM'],
+                             inner="quartile", split=True,
+                             ax = axes[i,4], palette="Set3")
+    
+        ax3.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+        axes[i,4].set_title(f'{IN} - {col}, Test - Positive')
+    
+        add_stat_annotation(ax3, data=data2, x='Model',
+                            y=col, test='t-test_ind',
+                            hue="Class", hue_order = ['HC', 'AAM'],
+                            box_pairs=[(("('X-Binge', 'cb', 'GB')","HC"),
+                                        ("('X-Binge', 'cb', 'GB')","AAM")),
+                                       (("('X-Binge', 'cb', 'LR')","HC"),
+                                        ("('X-Binge', 'cb', 'LR')","AAM")),
+                                       (("('X-Binge', 'cb', 'SVM-lin')","HC"),
+                                        ("('X-Binge', 'cb', 'SVM-lin')","AAM")),
+                                       (("('X-Binge', 'cb', 'SVM-rbf')","HC"),
+                                        ("('X-Binge', 'cb', 'SVM-rbf')","AAM"))],
+                            loc='inside', verbose=2, line_height=0.1)
+    
+        # Model prediction = False    
+        data3 = data[data['Model PN']=='TN & FN']
+        ax2 = sns.violinplot(data=data3, x="Model",
+                             y=col, hue="Class", hue_order=['HC','AAM'],
+                             inner="quartile", split=True,
+                             ax = axes[i,5], palette="Set3")
+    
+        ax2.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+        axes[i,5].set_title(f'{IN} - {col}, Test - Negative')
+    
+        add_stat_annotation(ax2, data=data3, x='Model',
+                            y=col, test='t-test_ind',
+                            hue="Class", hue_order = ['HC', 'AAM'],
+                            box_pairs=[(("('X-Binge', 'cb', 'GB')","HC"),
+                                        ("('X-Binge', 'cb', 'GB')","AAM")),
+                                       (("('X-Binge', 'cb', 'LR')","HC"),
+                                        ("('X-Binge', 'cb', 'LR')","AAM")),
+                                       (("('X-Binge', 'cb', 'SVM-lin')","HC"),
+                                        ("('X-Binge', 'cb', 'SVM-lin')","AAM")),
+                                       (("('X-Binge', 'cb', 'SVM-rbf')","HC"),
+                                        ("('X-Binge', 'cb', 'SVM-rbf')","AAM"))],
+                            loc='inside', verbose=2, line_height=0.1)        
+    
+    return [data.groupby(['Model PN','Model','Class'])[col].mean(),
+            data.groupby(['Model PN','Model','Class','Sex'])[col].mean()]
+
+# def ml_plot(IN, data, col):
+#     fig, axes = plt.subplots(nrows=3, ncols=2+1, figsize=(2*len(col), 16))
+    
+#     data_M = data[data['Sex']!='Female']
+#     data_F = data[data['Sex']=='Female']
+    
+#     for i, data in enumerate([data, data_M, data_F]):
+#         # Model count
+#         ax = sns.countplot(data=data, x="Model", 
+#                            hue='Predict', hue_order=[True,False],
+#                            ax=axes[i,0], palette="Set2")
+#         if i == 0:
+#             axes[i,0].set_title(f'All: Session {data["Session"].values[0]}' +
+#                                 f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+            
+#         elif i==1:
+#             axes[i,0].set_title(f'Male: Session {data["Session"].values[0]}' +
+#                                 f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+#         else:
+#             axes[i,0].set_title(f'Female: Session {data["Session"].values[0]}' +
+#                                 f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+    
+#         ax.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+#         for p in ax.patches:
+#             ax.annotate('{:}'.format(p.get_height()), (p.get_x()+0.15, p.get_height()))
+            
+#         axes[i,0].legend(title='Prediction',loc='lower left')
+
+#         # Model prediction = True
+#         data2 = data[data['Predict']==True]
+#         ax3 = sns.violinplot(data=data2, x="Model",
+#                              y=col, hue="Class", hue_order=['HC','AAM'],
+#                              inner="quartile", split=True,
+#                              ax = axes[i,1], palette="Set3")
+    
+#         ax3.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+#         axes[i,1].set_title(f'{IN} - {col}, Validation - True')
+    
+#         add_stat_annotation(ax3, data=data2, x='Model',
+#                             y=col, test='t-test_ind',
+#                             hue="Class", hue_order = ['HC', 'AAM'],
+#                             box_pairs=[(("('X', 'Binge', 'cb', 'GB')","HC"),
+#                                         ("('X', 'Binge', 'cb', 'GB')","AAM")),
+#                                        (("('X', 'Binge', 'cb', 'LR')","HC"),
+#                                         ("('X', 'Binge', 'cb', 'LR')","AAM")),
+#                                        (("('X', 'Binge', 'cb', 'SVM-lin')","HC"),
+#                                         ("('X', 'Binge', 'cb', 'SVM-lin')","AAM")),
+#                                        (("('X', 'Binge', 'cb', 'SVM-rbf')","HC"),
+#                                         ("('X', 'Binge', 'cb', 'SVM-rbf')","AAM"))],
+#                             loc='inside', verbose=2, line_height=0.1)
+    
+#         # Model prediction = False    
+#         data3 = data[data['Predict']==False]
+#         ax2 = sns.violinplot(data=data3, x="Model",
+#                              y=col, hue="Class", hue_order=['HC','AAM'],
+#                              inner="quartile", split=True,
+#                              ax = axes[i,2], palette="Set3")
+    
+#         ax2.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+#         axes[i,2].set_title(f'{IN} - {col}, Validation - False')
+    
+#         add_stat_annotation(ax2, data=data3, x='Model',
+#                             y=col, test='t-test_ind',
+#                             hue="Class", hue_order = ['HC', 'AAM'],
+#                             box_pairs=[(("('X', 'Binge', 'cb', 'GB')","HC"),
+#                                         ("('X', 'Binge', 'cb', 'GB')","AAM")),
+#                                        (("('X', 'Binge', 'cb', 'LR')","HC"),
+#                                         ("('X', 'Binge', 'cb', 'LR')","AAM")),
+#                                        (("('X', 'Binge', 'cb', 'SVM-lin')","HC"),
+#                                         ("('X', 'Binge', 'cb', 'SVM-lin')","AAM")),
+#                                        (("('X', 'Binge', 'cb', 'SVM-rbf')","HC"),
+#                                         ("('X', 'Binge', 'cb', 'SVM-rbf')","AAM"))],
+#                             loc='inside', verbose=2, line_height=0.1)
+
+# def test_plot(IN, data, col):
+#     fig, axes = plt.subplots(nrows=3, ncols=2+1, figsize=(2*len(col), 16))
+    
+#     data_M = data[data['Sex']!='Female']
+#     data_F = data[data['Sex']=='Female']
+    
+#     for i, data in enumerate([data, data_M, data_F]):
+#         # Model count
+#         ax = sns.countplot(data=data, x="Model", 
+#                            hue='Predict', hue_order=[True,False],
+#                            ax=axes[i,0], palette="Set2")
+#         if i == 0:
+#             axes[i,0].set_title(f'All: Session {data["Session"].values[0]}' +
+#                                 f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+            
+#         elif i==1:
+#             axes[i,0].set_title(f'Male: Session {data["Session"].values[0]}' +
+#                                 f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+#         else:
+#             axes[i,0].set_title(f'Female: Session {data["Session"].values[0]}' +
+#                                 f' (n = {len(data["Session"].tolist())//4}) by MODEL')
+    
+#         ax.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+#         for p in ax.patches:
+#             ax.annotate('{:}'.format(p.get_height()), (p.get_x()+0.15, p.get_height()))
+            
+#         axes[i,0].legend(title='Prediction',loc='lower left')
+
+#         # Model prediction = True
+#         data2 = data[data['Predict']==True]
+#         ax3 = sns.violinplot(data=data2, x="Model",
+#                              y=col, hue="Class", hue_order=['HC','AAM'],
+#                              inner="quartile", split=True,
+#                              ax = axes[i,1], palette="Set3")
+    
+#         ax3.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+#         axes[i,1].set_title(f'{IN} - {col}, Test - True')
+    
+#         add_stat_annotation(ax3, data=data2, x='Model',
+#                             y=col, test='t-test_ind',
+#                             hue="Class", hue_order = ['HC', 'AAM'],
+#                             box_pairs=[(("('X-Binge', 'cb', 'GB')","HC"),
+#                                         ("('X-Binge', 'cb', 'GB')","AAM")),
+#                                        (("('X-Binge', 'cb', 'LR')","HC"),
+#                                         ("('X-Binge', 'cb', 'LR')","AAM")),
+#                                        (("('X-Binge', 'cb', 'SVM-lin')","HC"),
+#                                         ("('X-Binge', 'cb', 'SVM-lin')","AAM")),
+#                                        (("('X-Binge', 'cb', 'SVM-rbf')","HC"),
+#                                         ("('X-Binge', 'cb', 'SVM-rbf')","AAM"))],
+#                             loc='inside', verbose=2, line_height=0.1)
+    
+#         # Model prediction = False    
+#         data3 = data[data['Predict']==False]
+#         ax2 = sns.violinplot(data=data3, x="Model",
+#                              y=col, hue="Class", hue_order=['HC','AAM'],
+#                              inner="quartile", split=True,
+#                              ax = axes[i,2], palette="Set3")
+    
+#         ax2.set_xticklabels(["GB", "LR", "SVM-lin", "SVM-rbf"])
+    
+#         axes[i,2].set_title(f'{IN} - {col}, Test - False')
+    
+#         add_stat_annotation(ax2, data=data3, x='Model',
+#                             y=col, test='t-test_ind',
+#                             hue="Class", hue_order = ['HC', 'AAM'],
+#                             box_pairs=[(("('X-Binge', 'cb', 'GB')","HC"),
+#                                         ("('X-Binge', 'cb', 'GB')","AAM")),
+#                                        (("('X-Binge', 'cb', 'LR')","HC"),
+#                                         ("('X-Binge', 'cb', 'LR')","AAM")),
+#                                        (("('X-Binge', 'cb', 'SVM-lin')","HC"),
+#                                         ("('X-Binge', 'cb', 'SVM-lin')","AAM")),
+#                                        (("('X-Binge', 'cb', 'SVM-rbf')","HC"),
+#                                         ("('X-Binge', 'cb', 'SVM-rbf')","AAM"))],
+#                             loc='inside', verbose=2, line_height=0.1)
 
 
 #     # Model count
@@ -596,17 +1171,15 @@ def ml_plot(IN, data, col):
 #                                    (("('X', 'Binge', 'cb', 'SVM-rbf')","HC"),
 #                                     ("('X', 'Binge', 'cb', 'SVM-rbf')","AAM"))],
 #                         loc='inside', verbose=2, line_height=0.1)
-    
-    return [data.groupby(['Predict','Model','Class'])[col].mean(),
-            data.groupby(['Predict','Model','Class','Sex'])[col].mean()]
+
 
 def tf_plot(data, roi):
-    ax = sns.catplot(data=data, x="Predict", y=roi, col="Model",
+    ax = sns.catplot(data=data, x="Model PN", y=roi, col="Model",
                      kind="violin", hue="Class", hue_order = ['HC', 'AAM'],
                      inner="quartile", split=True, palette="Set2",
                      height=6, aspect=1); 
     
-    g = sns.catplot(data=data, x='Model', y=roi, col="Predict",
+    g = sns.catplot(data=data, x='Model', y=roi, col="Model PN",
                     kind="violin", hue="Class", hue_order = ['HC', 'AAM'],
                     inner="quartile", split=True, palette="Set2",
                     height=6, aspect=1);
@@ -616,19 +1189,19 @@ def tf_plot(data, roi):
      .set_titles("{col_name} {col_var}")
      .despine(left=True))
 
-def violin_plot(DATA, ROI):
-    for col in ROI:
-        sns.set(style="whitegrid", font_scale=1)
-        fig, axes = plt.subplots(nrows=1, ncols=len(DATA),
-                                 figsize = ((len(DATA)+1)**2, len(DATA)+1))
-        fig.suptitle(f'{col}', fontsize=15)
-        for i, (Key, DF) in enumerate(DATA):
-            axes[i].set_title(f'{Key} = {str(len(DF[col].dropna()))}')
-            sns.violinplot(x="Class", y=col, data = DF, order=['HC', 'AAM'],
-                           inner="quartile", ax = axes[i], palette="Set2")
-            add_stat_annotation(ax = axes[i], data=DF, x="Class", y=col,
-                                box_pairs = [("HC","AAM")], order=["HC","AAM"],
-                                test='t-test_ind', text_format='star', loc='inside')
+# def violin_plot(DATA, ROI):
+#     for col in ROI:
+#         sns.set(style="whitegrid", font_scale=1)
+#         fig, axes = plt.subplots(nrows=1, ncols=len(DATA),
+#                                  figsize = ((len(DATA)+1)**2, len(DATA)+1))
+#         fig.suptitle(f'{col}', fontsize=15)
+#         for i, (Key, DF) in enumerate(DATA):
+#             axes[i].set_title(f'{Key} = {str(len(DF[col].dropna()))}')
+#             sns.violinplot(x="Class", y=col, data = DF, order=['HC', 'AAM'],
+#                            inner="quartile", ax = axes[i], palette="Set2")
+#             add_stat_annotation(ax = axes[i], data=DF, x="Class", y=col,
+#                                 box_pairs = [("HC","AAM")], order=["HC","AAM"],
+#                                 test='t-test_ind', text_format='star', loc='inside')
     
 # ax = sns.catplot(data=ML_CTQ, x="Predict", y='Denial sum', col="Model",
 #                  kind="violin", hue="Class", hue_order = ['HC', 'AAM'],
