@@ -1,1 +1,1 @@
-# xai_imagen
+# imagen_posthoc_analysis
