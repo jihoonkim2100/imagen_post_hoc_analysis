@@ -1,6 +1,6 @@
 #################################################################################
 """ IMAGEN Instrument Loader using H5DF file in all Session """
-# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 12th October 2021
+# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 18th October 2021
 #
 import os
 import h5py
@@ -769,7 +769,7 @@ class IMAGEN_instrument(INSTRUMENT_loader, HD5F_loader):
 
         Returns
         -------
-        self.DF : pandas.dataframe
+        self.INST : pandas.dataframe
             The Instrument dataframe
         
         Notes
@@ -787,7 +787,8 @@ class IMAGEN_instrument(INSTRUMENT_loader, HD5F_loader):
         >>> from imagen_instrumentloader import *
         >>> DATA = IMAGEN_instrument()
         >>> DF = DATA.read_INSTRUMENT(
-        ...     instrument_file)                 # instrument
+        ...     instrument_file)               # instrument
+        ... DF_FU3 = DF.groupby('Session').get_group('FU3')
 
         """
         # Set Instrument file
@@ -795,17 +796,123 @@ class IMAGEN_instrument(INSTRUMENT_loader, HD5F_loader):
         # Load the instrument file       
         instrument_path = f"{self.DATA_DIR}/Instrument/{self.instrument_file}"
         DF = pd.read_csv(instrument_path, low_memory=False)
-        self.DF = DF
-        return self.DF
+        self.INST = DF
+        return self.INST
             
-#         Inst = INST.read_INSTRUMENT('instrument.csv')
-#         Inst_FU3 = Inst.groupby('Session').get_group('FU3')
+
     
-    def read_RUN(self, run_file):
+    def read_RUN(self, run_file, save=False):
+        """ Load the ML RUN result in both Test & Holdout in all session
         
+        Parameters
+        ----------
+        run_file : string
+            ML models result run.csv path
+        save : boolean
+            if save == True, then save it as .csv
         
+        Returns
+        -------
+        self.RUN : pandas.dataframe
+            The RUN dataframe
         
-        pass
+        Examples
+        --------
+        >>> from imagen_instrumentloader import *
+        >>> DATA = IMAGEN_instrument()
+        >>> DF = DATA.read_RUN(
+        ...     run_file)                             # run
+        ... DF_FU3 = DF.groupby('Session').get_group('FU3')
+        
+        """
+        df = pd.read_csv(run_file, low_memory = False)
+        
+        DF_RUN = []
+        for i in range(83):
+            # Test
+            test_ids = eval(df['test_ids'].values[i])
+            test_lbls = eval(df['test_lbls'].values[i])
+            test_probs = [probs[1] for probs in eval(df['test_probs'].values[i])]
+            # Holdout
+            holdout_ids = eval(df['holdout_ids'].values[i])
+            holdout_lbls = eval(df['holdout_lbls'].values[i])
+            holdout_preds = [probs[1] for probs in eval(df['holdout_preds'].values[i])]
+#             rename the columns may be needed
+            DF_TEST = pd.DataFrame({
+                # Model configuration
+                "i" : df.iloc[i][7],
+                "o" : df.iloc[i][8],
+                "io" : df.iloc[i][1],
+                "technique" : df.iloc[i][2],
+                "Session" : df.iloc[i][25],
+                "Trial" : df.iloc[i][4],
+                "path" : df.iloc[i][24],
+                "n_samples" : df.iloc[i][5],
+                "n_samples_cc" : df.iloc[i][6],
+                "i_is_conf" : df.iloc[i][9],
+                "o_is_conf" : df.iloc[i][10],
+                "Model" : df.iloc[i][3],
+                "model_SVM-rbf__C" : df.iloc[i][18],
+                "model_SVM-rbf__gamma" : df.iloc[i][19],
+                "runtime" : df.iloc[i][20],
+                "model_SVM-lin__C" : df.iloc[i][21],
+                "model_GB__learning_rate" : df.iloc[i][22],
+                "model_LR__C" : df.iloc[i][23],
+                # Result
+                "train_score" : df.iloc[i][11],
+                "valid_score" : df.iloc[i][12],
+                "test_score" : df.iloc[i][13],
+                "roc_auc" : df.iloc[i][14],
+                "holdout_score" : df.iloc[i][26],
+                "holdout_roc_auc" : df.iloc[i][27],
+                # Test
+                "dataset" : "Test set",
+                "ID" : test_ids,
+                "true_label" : test_lbls,
+                "prediction" : test_probs,
+            })
+            DF_HOLDOUT = pd.DataFrame({
+                # Model configuration
+                "i" : df.iloc[i][7],
+                "o" : df.iloc[i][8],
+                "io" : df.iloc[i][1],
+                "technique" : df.iloc[i][2],
+                "Session" : df.iloc[i][25],
+                "Trial" : df.iloc[i][4],
+                "path" : df.iloc[i][24],
+                "n_samples" : df.iloc[i][5],
+                "n_samples_cc" : df.iloc[i][6],
+                "i_is_conf" : df.iloc[i][9],
+                "o_is_conf" : df.iloc[i][10],
+                "Model" : df.iloc[i][3],
+                "model_SVM-rbf__C" : df.iloc[i][18],
+                "model_SVM-rbf__gamma" : df.iloc[i][19],
+                "runtime" : df.iloc[i][20],
+                "model_SVM-lin__C" : df.iloc[i][21],
+                "model_GB__learning_rate" : df.iloc[i][22],
+                "model_LR__C" : df.iloc[i][23],
+                # Result
+                "train_score" : df.iloc[i][11],
+                "valid_score" : df.iloc[i][12],
+                "test_score" : df.iloc[i][13],
+                "roc_auc" : df.iloc[i][14],
+                "holdout_score" : df.iloc[i][26],
+                "holdout_roc_auc" : df.iloc[i][27],
+                # Holdout
+                "dataset" : "Holdout set",
+                "ID" : holdout_ids,
+                "true_label" : holdout_lbls,
+                "prediction" : holdout_preds
+            })
+            DF_RUN.append(DF_TEST)
+            DF_RUN.append(DF_HOLDOUT)
+        RUN = pd.concat(DF_RUN)
+#         rename the values may be needed
+        self.RUN = RUN
+        if save == True:
+            save_absolute_path = 'IMAGEN_run.csv'
+            RUN.to_csv(save_absolute_path, index=False)
+        return self.RUN
     
     def to_posthoc(self, h5py, instruemnt, run):
         """ Set the Posthoc file

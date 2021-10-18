@@ -34,11 +34,12 @@ def to_shap(MODEL, X):
             continue
         print("generating SHAP values for model = {} ..".format(model_name))
         for i, model in enumerate(models[model_name]):
-#             if i>0:
-#                 print("Skipping model '{}': {}' as it is taking too long".format(model_name, i))
-#                 continue
-            explainer = shap.Explainer(model.predict, X100, output_names=["Healthy","AUD-risk"])
-            shap_values = explainer(X)
+            if i!=1:
+                print("Skipping model '{}': {}' as it is taking too long".format(model_name, i))
+                continue
+            if i==1:
+                explainer = shap.Explainer(model.predict, X100, output_names=["Healthy","AUD-risk"])
+                shap_values = explainer(X)
             if not os.path.isdir("explainers"):
                 os.makedirs("explainers")
         
