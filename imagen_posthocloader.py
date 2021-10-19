@@ -1,6 +1,6 @@
 #################################################################################
 """ IMAGEN Posthoc analysis Loader in all Session """
-# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 18th October 2021
+# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 19th October 2021
 #
 import os
 import h5py
@@ -606,7 +606,7 @@ class INSTRUMENT_loader:
 #             print(f"{'-'*83} \n{self.__str__()} \n{'-'*83}")
 #             print(f"{self.NEW_DF.info(), self.NEW_DF.describe()}")
 
-class HD5F_loader:
+class HDF5_loader:
     def __init__(self, DATA_DIR="/ritter/share/data/IMAGEN"):
         """ Set up path
         
@@ -619,7 +619,7 @@ class HD5F_loader:
         # Set the directory path: IMAGEN
         self.DATA_DIR = DATA_DIR    
 
-    def set_HD5F(self, DATA, save=False):
+    def set_HDF5(self, DATA, save=False):
         """ Save all session y in one file
         
         Parameters
@@ -637,9 +637,9 @@ class HD5F_loader:
         Examples
         --------
         >>> from imagen_posthocloader import *
-        >>> DATA = HD5F_loader()
-        >>> DF3 = DATA.set_HD5F(
-        ...     DATA,                                 # HD5F
+        >>> DATA = HDF5_loader()
+        >>> DF3 = DATA.set_HDF5(
+        ...     DATA,                                 # HDF5
         ...     save = True)                          # save
         >>> DF_FU3 = DF3.groupby('Session').get_group('FU3')
 
@@ -662,9 +662,9 @@ class HD5F_loader:
             ROI = ['ID','Session','y','Dataset','Sex','Site','Class']
             # Generate the instrument files in one dataframe
             BINGE_LIST = []
-            for SES, DATASET, HD5F in BINGE:
-                path = f"{self.DATA_DIR}/h5files/{HD5F}"
-                # Convert HD5F to List
+            for SES, DATASET, HDF5 in BINGE:
+                path = f"{self.DATA_DIR}/h5files/{HDF5}"
+                # Convert HDF5 to List
                 d = h5py.File(path,'r')
                 # Set All, HC, and AAM
                 b_list = list(np.array(d[list(d.keys())[0]]))
@@ -703,7 +703,7 @@ class HD5F_loader:
             DF3.to_csv(save_path, index=None)
         return DF3
     
-    def get_HD5F(self, hd5f_file):
+    def get_HDF5(self, hdf5_file):
         """ Select the ROI y as file
         
         Parameters
@@ -724,15 +724,15 @@ class HD5F_loader:
         Examples
         --------
         >>> from imagen_posthocloader import *
-        >>> DATA = HD5F_loader()
-        >>> DF = DATA.get_HD5F(
-        ...     hd5f_file)                           # HD5F
+        >>> DATA = HDF5_loader()
+        >>> DF = DATA.get_HDF5(
+        ...     hdf5_file)                           # HDF5
         >>> DF_FU3 = DF.groupby('Session').get_group('FU3')
         
         """
-        # Load the hd5f file       
-        hd5f_path = f"{self.DATA_DIR}/posthoc/{hd5f_file}"
-        DF = pd.read_csv(hd5f_path, low_memory=False)
+        # Load the hdf5 file       
+        hdf5_path = f"{self.DATA_DIR}/posthoc/{hdf5_file}"
+        DF = pd.read_csv(hdf5_path, low_memory=False)
         return DF
     
 #     def __str__(self):
@@ -946,7 +946,7 @@ class RUN_loader:
 #     def __str__(self):
 #         pass
 
-class IMAGEN_posthoc(INSTRUMENT_loader, HD5F_loader, RUN_loader):
+class IMAGEN_posthoc(INSTRUMENT_loader, HDF5_loader, RUN_loader):
     def __init__(self, DATA_DIR="/ritter/share/data/IMAGEN"):
         """ Set up path
         
@@ -1006,31 +1006,31 @@ class IMAGEN_posthoc(INSTRUMENT_loader, HD5F_loader, RUN_loader):
             Z.to_csv(save_path, index=None)
         return self.INSTRUMENT
 
-    def to_HD5F(self, hd5f_file, save=False):
+    def to_HDF5(self, hdf5_file, save=False):
         """ Generate the dataframe,
         all subject (ALL), healthy control (HC),
         adolscent alcohol misuse (AAM), Sex, Site, and Class
         
         Parameters
         ----------
-        hd5f_file : string,
+        hdf5_file : string,
             The IMAGEN's h5df file (*.csv)
         save : boolean
             if save == True, then save it as .csv
         
         Returns
         -------
-        self.HD5F : pandas.dataframe
-            The slected HD5F dataframe
+        self.HDF5 : pandas.dataframe
+            The slected HDF5 dataframe
             
         Examples
         --------
         >>> from imagen_posthocloader import *
         >>> DATA = IMAGEN_posthoc()
-        >>> HD5F = DATA.to_HD5F(
-        ...     h5py_file,                               # HD5F
+        >>> HDF5 = DATA.to_HDF5(
+        ...     h5py_file,                               # HDF5
         ...     save = True)                             # Save
-        >>> HD5F_FU3 = HD5F.groupby('Session').get_group('fu3')
+        >>> HDF5_FU3 = HDF5.groupby('Session').get_group('fu3')
 
         Notes
         -----
@@ -1038,15 +1038,15 @@ class IMAGEN_posthoc(INSTRUMENT_loader, HD5F_loader, RUN_loader):
         Training and Holdout
 
         """
-        # Load the hd5f file
-        DF = self.get_HD5F(hd5f_file)
-        self.HD5F = DF
+        # Load the hdf5 file
+        DF = self.get_HDF5(hdf5_file)
+        self.HDF5 = DF
         if save == True:
-            save_path = f"{self.DATA_DIR}/posthoc/IMAGEN_HD5F.csv"
+            save_path = f"{self.DATA_DIR}/posthoc/IMAGEN_HDF5.csv"
             if not os.path.isdir(os.path.dirname(save_path)):
                 os.makedirs(os.path.dirname(save_path))
             DF.to_csv(save_path, index=None)
-        return self.HD5F    
+        return self.HDF5    
     
     def to_RUN(self, run_file, COL, save=False):
         """ Select the ROI columns in one file
@@ -1129,37 +1129,37 @@ class IMAGEN_posthoc(INSTRUMENT_loader, HD5F_loader, RUN_loader):
         self.INSTRUMENT = DF
         return self.INSTRUMENT
 
-    def read_HD5F(self, hd5f_file):
-        """ Load the HD5F file
+    def read_HDF5(self, hdf5_file):
+        """ Load the HDF5 file
         
         Parameters
         ----------
-        hd5f_file : string,
+        hdf5_file : string,
             The IMAGEN's h5df file (*.csv)
         
         Returns
         -------
-        self.HD5F : pandas.dataframe
-            The slected HD5F dataframe
+        self.HDF5 : pandas.dataframe
+            The slected HDF5 dataframe
             
         Examples
         --------
         >>> from imagen_posthocloader import *
         >>> DATA = IMAGEN_posthoc()
-        >>> HD5F = DATA.read_HD5F(
-        ...     h5py_file)                               # HD5F
-        >>> HD5F_FU3 = HD5F.groupby('Session').get_group('fu3')
+        >>> HDF5 = DATA.read_HDF5(
+        ...     h5py_file)                               # HDF5
+        >>> HDF5_FU3 = HDF5.groupby('Session').get_group('fu3')
 
         Notes
         -----
         Dataset:
         Training and Holdout
         """
-        # Load the hd5f file
-        hd5f_path = f"{self.DATA_DIR}/posthoc/{hd5f_file}"
-        DF = pd.read_csv(hd5f_path, low_memory=False)
-        self.HD5F = DF
-        return self.HD5F
+        # Load the hdf5 file
+        hdf5_path = f"{self.DATA_DIR}/posthoc/{hdf5_file}"
+        DF = pd.read_csv(hdf5_path, low_memory=False)
+        self.HDF5 = DF
+        return self.HDF5
   
     def read_RUN(self, run_file):
         """ Load the RUN file
@@ -1191,7 +1191,7 @@ class IMAGEN_posthoc(INSTRUMENT_loader, HD5F_loader, RUN_loader):
             'Predict TF','Model PN','Label PN','true_label','prediction'
         
         """
-        # Load the hd5f file
+        # Load the hdf5 file
         run_path = f"{self.DATA_DIR}/posthoc/{run_file}"
         DF = pd.read_csv(run_path, low_memory=False)
         self.RUN = DF
@@ -1204,7 +1204,7 @@ class IMAGEN_posthoc(INSTRUMENT_loader, HD5F_loader, RUN_loader):
         ----------        
         DATA : list
             [INSTRUMENT.csv,                   # instrument
-             HD5F.csv,                         # hd5f
+             HDF5.csv,                         # hdf5
              RUN.csv]                          # run
              
         save : boolean
@@ -1220,7 +1220,7 @@ class IMAGEN_posthoc(INSTRUMENT_loader, HD5F_loader, RUN_loader):
         >>> from imagen_psothocloader import *
         >>> Posthoc = IMAGEN_posthoc()
         >>> DF = Posthoc.to_posthoc(
-        ...     DATA)               # INSTRUMENT, HD5F, RUN                   
+        ...     DATA)               # INSTRUMENT, HDF5, RUN                   
         >>> DF_FU3 = DF.groupby('Session').get_group('FU3')
 
         Notes
@@ -1229,11 +1229,11 @@ class IMAGEN_posthoc(INSTRUMENT_loader, HD5F_loader, RUN_loader):
         
         """
         INST = self.read_INSTRUMENT(DATA[0])
-        HD5F = self.read_HD5F(DATA[1])
+        HDF5 = self.read_HDF5(DATA[1])
         RUN = self.read_RUN(DATA[2])
         
         I_FU3 = INST.groupby('Session').get_group('FU3')
-        H_FU3 = HD5F.groupby('Session').get_group('FU3')
+        H_FU3 = HDF5.groupby('Session').get_group('FU3')
         R_FU3 = RUN.groupby('Session').get_group('FU3')
         HR_FU3 = pd.merge(H_FU3, R_FU3, on=['ID','Session'], how='outer')
         DF = pd.merge(I_FU3, HR_FU3, on=['ID','Session'], how='inner')
@@ -1264,7 +1264,7 @@ class IMAGEN_posthoc(INSTRUMENT_loader, HD5F_loader, RUN_loader):
         >>> from imagen_psothocloader import *
         >>> Posthoc = IMAGEN_posthoc()
         >>> DF = Posthoc.read_posthoc(
-        ...     DATA)               # INSTRUMENT, HD5F, RUN                   
+        ...     DATA)               # INSTRUMENT, HDF5, RUN                   
         >>> DF_FU3 = DF.groupby('Session').get_group('FU3')
 
         Notes
