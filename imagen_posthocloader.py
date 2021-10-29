@@ -1,6 +1,6 @@
 #################################################################################
 """ IMAGEN Posthoc analysis Loader in all Session """
-# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 19th October 2021
+# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 27th October 2021
 #
 import os
 import h5py
@@ -652,12 +652,12 @@ class HDF5_loader:
         if DATA == "Binge":
             # Set the files with session and roi columns
             BINGE = [
-                ('FU3','Training','newlbls-fu3-espad-fu3-19a-binge-n650.h5'),
-                ('FU3','Holdout', 'newholdout-fu3-espad-fu3-19a-binge-n102.h5'),
-                ('FU2','Training','newlbls-fu2-espad-fu3-19a-binge-n634.h5'),
-                ('FU2','Holdout', 'newholdout-fu2-espad-fu3-19a-binge-n102.h5'),
-                ('BL', 'Training','newlbls-bl-espad-fu3-19a-binge-n620.h5'),
-                ('BL', 'Holdout', 'newholdout-bl-espad-fu3-19a-binge-n102.h5')
+                ('FU3','Training','newlbls-clean-fu3-espad-fu3-19a-binge-n650.h5'),
+                ('FU3','Holdout', 'newholdout-clean-fu3-espad-fu3-19a-binge-n102.h5'),
+                ('FU2','Training','newlbls-clean-fu2-espad-fu3-19a-binge-n634.h5'),
+                ('FU2','Holdout', 'newholdout-clean-fu2-espad-fu3-19a-binge-n102.h5'),
+                ('BL', 'Training','newlbls-clean-bl-espad-fu3-19a-binge-n620.h5'),
+                ('BL', 'Holdout', 'newholdout-clean-bl-espad-fu3-19a-binge-n102.h5')
             ]
             ROI = ['ID','Session','y','Dataset','Sex','Site','Class']
             # Generate the instrument files in one dataframe
@@ -785,7 +785,7 @@ class RUN_loader:
             test_probs = [probs[1] for probs in eval(df['test_probs'].values[i])]
             holdout_ids = eval(df['holdout_ids'].values[i])
             holdout_lbls = eval(df['holdout_lbls'].values[i])
-            holdout_preds = [probs[1] for probs in eval(df['holdout_preds'].values[i])]
+            holdout_preds = [probs[1] for probs in eval(df['holdout_probs'].values[i])]
             # generate the dataframe
             DF_TEST = pd.DataFrame({
                 # Model configuration
@@ -1228,15 +1228,15 @@ class IMAGEN_posthoc(INSTRUMENT_loader, HDF5_loader, RUN_loader):
         ONLY FU3 implementation, other seession need modification
         
         """
-        INST = self.read_INSTRUMENT(DATA[0])
-        HDF5 = self.read_HDF5(DATA[1])
+        HDF5 = self.read_HDF5(DATA[0])
+        INST = self.read_INSTRUMENT(DATA[1])
         RUN = self.read_RUN(DATA[2])
         
-        I_FU3 = INST.groupby('Session').get_group('FU3')
         H_FU3 = HDF5.groupby('Session').get_group('FU3')
+        I_FU3 = INST.groupby('Session').get_group('FU3')
         R_FU3 = RUN.groupby('Session').get_group('FU3')
-        HR_FU3 = pd.merge(H_FU3, R_FU3, on=['ID','Session'], how='outer')
-        DF = pd.merge(I_FU3, HR_FU3, on=['ID','Session'], how='inner')
+        HR_FU3 = pd.merge(H_FU3, R_FU3, on=['ID','Session'], how='left')
+        DF = pd.merge(HR_FU3, I_FU3, on=['ID','Session'], how='left')
         self.posthoc = DF
         
         if save == True:

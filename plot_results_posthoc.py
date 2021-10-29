@@ -2,7 +2,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 """ IMAGEN Posthoc Analysis Visualization """
-# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 23th October 2021
+# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 27th October 2021
 #
 import math
 import pandas as pd
@@ -65,7 +65,7 @@ class SHAP_visualization:
         models = {}
         model_names = list(set([f.split("_")[0] for f in os.listdir(models_dir) if f.split(".")[-1]=="model"]))
         for model_name in model_names:
-            models.update({model_name: [load(f) for f in glob(models_dir+f"/{model_name}_*.model")]})
+            models.update({model_name: [load(f) for f in glob(models_dir+f"/{model_name}_cb_*.model")]})
         self.MODELS = models
         self.MODEL_NAME = model_names
         return self.MODELS
@@ -100,7 +100,8 @@ class SHAP_visualization:
         data = h5py.File(H5_DIR, 'r')
         print(data.keys(), data.attrs.keys())
         X = data['X'][()]
-        X_col_names = data.attrs['X_col_names']
+        X_col = data.attrs['X_col_names']
+        X_col_names = np.array([i.replace(")","") for i in X_col])
         self.tr_X = X
         self.tr_X_col_names = X_col_names
         
@@ -144,7 +145,8 @@ class SHAP_visualization:
         data = h5py.File(H5_DIR, 'r')
         print(data.keys(), data.attrs.keys())
         X = data['X'][()]
-        X_col_names = data.attrs['X_col_names']
+        X_col = data.attrs['X_col_names']
+        X_col_names = np.array([i.replace(")","") for i in X_col])
         self.ho_X = X
         self.ho_X_col_names = X_col_names
         
@@ -341,7 +343,7 @@ def ml_plot(train, test, col):
     # 0,5. Prediction TF
     ax5 = sns.violinplot(data=test, x="Model", y=col,
                          inner="quartile", split=True,
-                         hue='Sex', hue_order=['Male', 'Female'],
+                         hue='Predict TF', hue_order=['TP & TN', 'FP & FN'],
                          ax = axes[0,5], palette="Set1")
         
     axes[0,5].set_title(f'{col}, Holdout Set')
