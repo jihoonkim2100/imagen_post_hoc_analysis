@@ -2,25 +2,26 @@
 #!/usr/bin/env python
 # coding: utf-8
 """ IMAGEN Posthoc Analysis Visualization """
-# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 27th October 2021
+# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 4th November 2021
 #
-import math
 import pandas as pd
 import seaborn as sns
 from scipy.stats import shapiro, levene, ttest_ind, bartlett
 from statannot import add_stat_annotation
 import warnings
-
-import os
 import numpy as np
 import pandas as pd 
-from glob import glob
 import matplotlib.pyplot as plt
+
 import shap
 import h5py
 import pickle
 from joblib import load
-import parmap
+
+
+import os
+from glob import glob
+
 
 class SHAP_visualization:
     def __init__(self, DATA_DIR="/ritter/share/data/IMAGEN"):
@@ -87,7 +88,7 @@ class SHAP_visualization:
         self.tr_X_col_names : numpy.ndarray
             X features name list
         self.tr_Other : list
-            at least contain y, numpy.ndarray or other Group mask
+            at least contain y, ID, numpy.ndarray or other Group mask
             
         Examples
         --------
@@ -97,7 +98,7 @@ class SHAP_visualization:
         ...     'H5_DIR')                                  # DATA
         
         """
-        data = h5py.File(H5_DIR, 'r')
+        data = h5py.File(self.DATA_DIR+"/h5files/"+H5_DIR, 'r')
         print(data.keys(), data.attrs.keys())
         X = data['X'][()]
         X_col = data.attrs['X_col_names']
@@ -106,12 +107,14 @@ class SHAP_visualization:
         self.tr_X_col_names = X_col_names
         
         y = data[data.attrs['labels'][0]][()]
+        ID = data['i'][()]
+        
         if group == True:
             sex_mask = data['sex'].astype(bool)[()]
             class_mask = data['Binge'][()].astype(bool)
-            self.tr_Other = [y, sex_mask, class_mask]
+            self.tr_Other = [y, ID, sex_mask, class_mask]
         else:
-            self.tr_Other = [y]
+            self.tr_Other = [y, ID]
         X.shape, len(X_col_names)
         return self.tr_X, self.tr_X_col_names, self.tr_Other
 
@@ -132,7 +135,7 @@ class SHAP_visualization:
         self.ho_X_col_names : numpy.ndarray
             X features name list
         self.ho_Other : list
-            at least contain y, numpy.ndarray or other Group mask
+            at least contain y, ID, numpy.ndarray or other Group mask
             
         Examples
         --------
@@ -142,8 +145,8 @@ class SHAP_visualization:
         ...     'H5_DIR')                                  # DATA
         
         """
-        data = h5py.File(H5_DIR, 'r')
-        print(data.keys(), data.attrs.keys())
+        data = h5py.File(self.DATA_DIR+"/h5files/"+H5_DIR, 'r')
+#         print(data.keys(), data.attrs.keys())
         X = data['X'][()]
         X_col = data.attrs['X_col_names']
         X_col_names = np.array([i.replace(")","") for i in X_col])
@@ -151,12 +154,14 @@ class SHAP_visualization:
         self.ho_X_col_names = X_col_names
         
         y = data[data.attrs['labels'][0]][()]
+        ID = data['i'][()]
+        
         if group == True:
             sex_mask = data['sex'][()]
             class_mask = data['Binge'][()]
-            self.ho_Other = [y, sex_mask, class_mask]
+            self.ho_Other = [y, ID, sex_mask, class_mask]
         else:
-            self.ho_Other = [y]
+            self.ho_Other = [y, ID]
         X.shape, len(X_col_names)
         return self.ho_X, self.ho_X_col_names, self.ho_Other
     
@@ -251,13 +256,58 @@ class SHAP_visualization:
                         os.makedirs("explainers")
                     with open(f"explainers/{model_name+str(i)}_multi.sav", "wb") as f:
                         pickle.dump(shap_values, f)
+    
+    def load_SHAP(self, SHAP):
+        """ Generate the mean|SHAP| value
         
-
-    def plot_SHAP(MODEL, DATA, PLOT):
-        # 1. choose the model (i = [0:6])
-        # 2. subgroup: triaining and holdout
-        # 3. plot: summary_plot bar, dot and summary_plot
-        pass
+        Parameters
+        ----------
+        SHAP : .sav file
+            Load the SHAP value
+        
+        Examples
+        --------
+        >>> from plot_results_posthoc import*
+        >>> DATA = SHAP_visualization()
+        >>> mean_SHAP = DATA.load_SHAP(
+        ...     'SHAP')                     # SHAP
+        
+        """
+        with open(self.DATA_DIR+"/posthoc/explainers/"+SHAP, 'rb') as fp:
+            load_shap_values = pickle.load(fp)
+        SHAP_list = []
+        for data in load_shap_values:
+            value = [data[i].values for i in range(data.shape[0])]
+            SHAP_list.append(value)
+        DF_SHAP = pd.DataFrame(SHAP_list)
+        mean_SHAP = list(DF_SHAP.apply(abs).mean())
+        return mean_SHAP
+    
+    def read_SHAP(self, SHAP_file):
+        """ Load the SHAP file
+        
+        Parameters
+        ----------
+        SHAP_file : string
+            SHAP file
+            
+        Returns
+        -------
+        self.SHAP : pandas.dataframe
+            The SHAP file (*.csv)
+        
+        Example
+        -------
+        >>> from plot_results_posthoc import *
+        >>> DATA = SHAP_visualizationc()
+        >>> DF = DATA.read_SHAP(
+        ...      SHAP_file)               # SHAP file
+        
+        """
+        SHAP_path = self.DATA_DIR+"/posthoc/explainers/"+SHAP_file
+        DF = pd.read_csv(SHAP_path, low_memory=False)
+        self.SHAP = DF
+        return self.SHAP
     
 def ml_plot(train, test, col):
     fig, axes = plt.subplots(nrows=3, ncols=6, figsize=(3*len(col), 18))
@@ -680,3 +730,9 @@ def sc_plot(IN, data, col):
             data.groupby(['Session','Sex','Class'])[col].mean(),
             data.groupby(['Session','Class','Sex'])[col].mean(),
             data.groupby(['Session','Sex'])[col].mean()]
+
+def plot_SHAP(MODEL, DATA, PLOT):
+    # 1. choose the model (i = [0:6])
+    # 2. subgroup: triaining and holdout
+    # 3. plot: summary_plot bar, dot and summary_plot
+    pass
