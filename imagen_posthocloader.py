@@ -1,6 +1,8 @@
 #################################################################################
+#!/usr/bin/env python
+# coding: utf-8
 """ IMAGEN Posthoc analysis Loader in all Session """
-# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 3rd November 2021
+# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 4th November 2021
 #
 import os
 import h5py
@@ -11,7 +13,6 @@ import numpy as np
 from glob import glob
 from joblib import load
 import warnings
-# from itertools import chain, repeat
 warnings.filterwarnings('ignore')
 
 class INSTRUMENT_loader:
@@ -1360,7 +1361,7 @@ class SHAP_loader:
         self.INPUT = INPUT
         return self.INPUT
     
-    def to_SHAP(self, INPUT, save = True):
+    def get_SHAP(self, INPUT, save = True):
         """ Generate the SHAP value
         
         Parameters
@@ -1431,7 +1432,8 @@ class SHAP_loader:
             SHAP_list.append(value)
         DF_SHAP = pd.DataFrame(SHAP_list)
         mean_SHAP = list(DF_SHAP.apply(abs).mean())
-        return mean_SHAP
+        std_SHAP = list(DF_SHAP.std())
+        return mean_SHAP, std_SHAP
     
     def read_SHAP(self, SHAP_file):
         """ Load the SHAP file
@@ -1454,13 +1456,14 @@ class SHAP_loader:
         ...      SHAP_file)               # SHAP file
         
         """
-        SHAP_path = self.DATA_DIR+"/posthoc/explainers/"+SHAP_file
+        SHAP_path = self.DATA_DIR+"/posthoc/"+SHAP_file
+        if not os.path.isdir(os.path.dirname(SHAP_path)):
+            os.makedirs(os.path.dirname(SHAP_path))
         DF = pd.read_csv(SHAP_path, low_memory=False)
         self.SHAP = DF
         return self.SHAP
 
-class IMAGEN_posthoc(INSTRUMENT_loader, HDF5_loader,
-                     RUN_loader,SHAP_loader):
+class IMAGEN_posthoc(INSTRUMENT_loader,HDF5_loader,RUN_loader,SHAP_loader):
     def __init__(self, DATA_DIR="/ritter/share/data/IMAGEN"):
         """ Set up path
         
@@ -1491,7 +1494,6 @@ class IMAGEN_posthoc(INSTRUMENT_loader, HDF5_loader,
         Notes
         -----
         Each Instrument has different Session and ID cases
-        Tree Algorithm implementation needed for extension
         
         Examples
         --------
@@ -1499,19 +1501,18 @@ class IMAGEN_posthoc(INSTRUMENT_loader, HDF5_loader,
         >>> DATA = IMAGEN_posthoc()
         >>> DF3 = DATA.to_INSTURMENT(
         ...     LIST,                            # instrument list
-        ...     NAME,                            # instrument name
         ...     save = True)
 
         """
-        T = pd.merge(LIST[0], LIST[1], on=['ID','Session'], how='outer')
-        R = pd.merge(T, LIST[2], on=['ID','Session'], how='outer')
-        E = pd.merge(R, LIST[3], on=['ID','Session'], how='outer')
-        E = pd.merge(E, LIST[4], on=['ID','Session'], how='outer')
-        P = pd.merge(E, LIST[5], on=['ID','Session'], how='outer')
-        L = pd.merge(P, LIST[6], on=['ID','Session'], how='outer')
-        Z = pd.merge(L, LIST[7], on=['ID','Session'], how='outer')
+        if len(LIST)==1:
+            self.INSTRUMENT = LIST[0]
+        else:
+            Z = pd.merge(LIST[0],LIST[1],on=['ID','Session'],how='outer')
+            if len(LIST)!=2:
+                for n in LIST[2:]:
+                    Z = pd.merge(Z,n,on=['ID','Session'],how='outer')
         self.INSTRUMENT = Z
-        
+
         if save == True:
             save_path = f"{self.DATA_DIR}/posthoc/IMAGEN_INSTRUMENT.csv"
             # set the save option
