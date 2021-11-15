@@ -2,7 +2,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 """ IMAGEN Posthoc analysis Loader in all Session """
-# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 4th November 2021
+# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 15th November 2021
 #
 import os
 import h5py
@@ -1316,7 +1316,7 @@ class SHAP_loader:
         self.MODEL_NAME = model_names
         return self.MODELS
     
-    def get_list(self, MODELS, X):
+    def get_list(self, MODELS, X, md='All'):
         """ Generate the SHAP input value list
         
         Parameters
@@ -1325,7 +1325,8 @@ class SHAP_loader:
             model configuration
         X : numpy.ndarray
             Data, hdf5 file
-        
+        md : string
+            Specify the model: SVM-RBF, SVM-LIN, LR, GB
         Returns
         -------
         self.INPUT : list
@@ -1337,7 +1338,8 @@ class SHAP_loader:
         >>> DATA = SHAP_loader()
         >>> INPUT = DATA.get_list(
         ...     'MODELS',                 # MODELS
-        ...     'X')                      # X
+        ...     'X',                      # X
+        ...     md='All')                 # model
         
         Notes
         -----
@@ -1358,10 +1360,13 @@ class SHAP_loader:
             for i, model in enumerate(MODELS[model_name]):
                 LIST = [model_name.upper(), X, i]
                 INPUT.append(LIST)
-        self.INPUT = INPUT
+        if md =='All':
+            self.INPUT = INPUT
+        else:
+            self.INPUT = INPUT = [i for i in INPUT if i[0]==md]
         return self.INPUT
     
-    def get_SHAP(self, INPUT, save = True):
+    def get_SHAP(self, INPUT, NAME, save = True):
         """ Generate the SHAP value
         
         Parameters
@@ -1388,7 +1393,7 @@ class SHAP_loader:
         X = INPUT[1]
         N = INPUT[2]
         # 100 instances for use as the background distribution
-        X100 = shap.utils.sample(X, 100) 
+        X100 = shap.utils.sample(X, len(X)) 
         for model_name in self.MODELS:
             if (model_name.upper() not in MODEL):
 #                 print(f"skipping model {model_name}")
@@ -1403,13 +1408,13 @@ class SHAP_loader:
                     explainer = shap.Explainer(model.predict, X100, output_names=["Healthy","AUD-risk"])
                     shap_values = explainer(X)
                 if save == True:
-                    if not os.path.isdir("explainers"):
-                        os.makedirs("explainers")
-                    with open(f"explainers/{model_name+str(i)}_multi.sav", "wb") as f:
+                    if not os.path.isdir("test"):
+                        os.makedirs("test")
+                    with open(f"test/{model_name+str(i)}_{NAME}.sav", "wb") as f:
                         pickle.dump(shap_values, f)
-    
-    def load_SHAP(self, SHAP):
-        """ Generate the mean|SHAP| value
+
+    def load_abs_SHAP(self, SHAP):
+        """ Generate the mean and std of|SHAP value| 
         
         Parameters
         ----------
@@ -1420,7 +1425,7 @@ class SHAP_loader:
         --------
         >>> from imagen_posthocloader import *
         >>> DATA = SHAP_loader()
-        >>> mean_SHAP = DATA.load_SHAP(
+        >>> mean_SHAP, std_SHAP = DATA.load_SHAP(
         ...     'SHAP')                     # SHAP
         
         """
@@ -1432,36 +1437,35 @@ class SHAP_loader:
             SHAP_list.append(value)
         DF_SHAP = pd.DataFrame(SHAP_list)
         mean_SHAP = list(DF_SHAP.apply(abs).mean())
-        std_SHAP = list(DF_SHAP.std())
+        std_SHAP = list(DF_SHAP.apply(abs).std())
         return mean_SHAP, std_SHAP
     
-    def read_SHAP(self, SHAP_file):
-        """ Load the SHAP file
+    def load_SHAP(self, SHAP):
+        """ Generate the mean and std of SHAP value
         
         Parameters
         ----------
-        SHAP_file : string
-            SHAP file
-            
-        Returns
-        -------
-        self.SHAP : pandas.dataframe
-            The SHAP file (*.csv)
+        SHAP : .sav file
+            Load the SHAP value
         
-        Example
-        -------
+        Examples
+        --------
         >>> from imagen_posthocloader import *
         >>> DATA = SHAP_loader()
-        >>> DF = DATA.read_SHAP(
-        ...      SHAP_file)               # SHAP file
+        >>> mean_SHAP, std_SHAP = DATA.load_SHAP(
+        ...     'SHAP')                     # SHAP
         
         """
-        SHAP_path = self.DATA_DIR+"/posthoc/"+SHAP_file
-        if not os.path.isdir(os.path.dirname(SHAP_path)):
-            os.makedirs(os.path.dirname(SHAP_path))
-        DF = pd.read_csv(SHAP_path, low_memory=False)
-        self.SHAP = DF
-        return self.SHAP
+        with open(self.DATA_DIR+"/posthoc/explainers/"+SHAP, 'rb') as fp:
+            load_shap_values = pickle.load(fp)
+        SHAP_list = []
+        for data in load_shap_values:
+            value = [data[i].values for i in range(data.shape[0])]
+            SHAP_list.append(value)
+        DF_SHAP = pd.DataFrame(SHAP_list)
+        mean_SHAP = list(DF_SHAP.mean())
+        std_SHAP = list(DF_SHAP.std())
+        return mean_SHAP, std_SHAP
 
 class IMAGEN_posthoc(INSTRUMENT_loader,HDF5_loader,RUN_loader,SHAP_loader):
     def __init__(self, DATA_DIR="/ritter/share/data/IMAGEN"):
@@ -1608,8 +1612,171 @@ class IMAGEN_posthoc(INSTRUMENT_loader,HDF5_loader,RUN_loader,SHAP_loader):
             if not os.path.isdir(os.path.dirname(save_path)):
                 os.makedirs(os.path.dirname(save_path))
             DF2.to_csv(save_path, index=None)
-        return self.RUN    
+        return self.RUN
+    
+    def to_abs_SHAP(self, H5, SHAP, save=False):
+        """ Get the subtype and mean and std of |SHAP value| in given models
+        
+        Parameters
+        ----------
+        H5: string
+            Feature name contained H5 list
+        SHAP : list
+            Model list of |SHAP value|
+        save : boolean
+            if save == True, then save it as .csv
+        
+        Returns
+        -------
+        COL : pandas.dataframe
+            The std, mean |SHAP value|
 
+        Examples
+        --------
+        >>> from imagen_posthocloader import *
+        >>> DATA = IMAGEN_posthoc()
+        >>> RUN = DATA.to_abs_SHAP(
+        ...     H5,                             # HDF5 for Feature name
+        ...     SHAP,                           # list of SHAP model name
+        ...     save=False)                     # save
+        """
+        
+        def type_check(col):
+            """ Generate the region category of the Feature
+            
+            Parameters
+            ----------
+            col: string
+                Feature name
+                
+            Returns
+            -------
+            * region : String
+                Return the * region under the condition
+            
+            """
+            if 'cor' == col.split('_')[1]:
+                return "Cortical region"
+            elif 'subcor' == col.split('_')[1]:
+                return "Subcortical region"
+            else:
+                return "DTI region"
+    
+        def lobe_region(col):
+            """ Generate the lobe region of the Feature
+            
+            Parameters
+            ----------
+            col: string
+                Feature name
+                
+            Returns
+            -------
+            * lobe or * cortex or * region : string
+                Return the lobe region name
+                
+            """
+            if 'cor' == col.split('_')[1]:
+                temporal_lobe = {'bankssts', 'entorhinal', 'fusiform', 'inferiortemporal', 'middletemporal',
+                                 'parahippocampal','superiortemporal', 'temporalpole', 'transversetemporal'}
+                frontal_lobe = {'caudalmiddlefrontal', 'lateralorbitofrontal', 'paracentral', 'parsopercularis',
+                                'parsorbitalis', 'parstriangularis', 'precentral', 'rostralmiddlefrontal',
+                                'superiorfrontal', 'medialorbitofrontal', 'frontalpole'}
+                parietal_lobe = {'inferiorparietal', 'postcentral', 'precuneus', 'superiorparietal', 'supramarginal'}
+                occipital_lobe = {'cuneus', 'lateraloccipital', 'pericalcarine', 'lingual'}
+                cingulate_cortex = {'caudalanteriorcingulate', 'isthmuscingulate', 'posteriorcingulate', 'rostralanteriorcingulate'}
+                insula_cortex = {'insula'}
+                check = col.split('_')[2].split('-')[0]
+                if check in temporal_lobe:
+                    return 'Temporal lobe'
+                elif check in frontal_lobe:
+                    return 'Frontal lobe'
+                elif check in parietal_lobe:
+                    return 'Parietal lobe'
+                elif check in occipital_lobe:
+                    return 'Occipital lobe'
+                elif check in cingulate_cortex:
+                    return 'Cingulate cortex'
+                elif check in insula_cortex:
+                    return 'Insula cortex'
+                else:
+                    return 'Other'
+            elif 'subcor' == col.split('_')[1]:
+                return 'Subcortical region' # To do
+            else:
+                return 'DTI region' # To do
+            
+        # Columns: Feature derivatives
+        _, X_col_names, _ = self.get_holdout_data(H5, group=False)
+        COL = pd.DataFrame(
+            {'Feature name': X_col_names}
+        )
+        COL['Modality'] = [i.split('_')[0] for i in COL['Feature name']]
+        COL['Type'] = [type_check(i) for i in COL['Feature name']]
+        COL['Lobe Region'] = [lobe_region(i) for i in COL['Feature name']]
+        COL['Value'] = [i.split('-')[-1].split('_')[-1] for i in COL['Feature name']]
+        
+        # Columns: Mean and std derivatives
+        for i in SHAP:
+            Data = i.replace('.sav','')
+            mean, _ = self.load_abs_SHAP(i)
+            DF = pd.DataFrame(
+                {f'{Data} mean': mean} 
+            )
+            COL = pd.concat([COL, DF], axis=1)
+        
+        for i in SHAP:
+            Data = i.replace('.sav','')
+            _, std = self.load_abs_SHAP(i)
+            DF = pd.DataFrame(
+                {f'{Data} std' : std}
+            )
+            COL = pd.concat([COL, DF], axis=1)
+            
+        if save == True:
+            save_path = f"{self.DATA_DIR}/posthoc/all_mean_abs_SHAP.csv"
+            if not os.path.isdir(os.path.dirname(save_path)):
+                os.makedirs(os.path.dirname(save_path))
+            COL.to_csv(save_path, index=None)
+        return COL
+    
+    def to_mofm_SHAP(self, DF, LIST, save = False):
+        """ Get the std, and mean of mean|SHAP value| in given models
+        
+        Parameters
+        ----------
+        DF : pandas.dataframe
+            all_*_SHAP*.csv expected
+            
+        LIST : list
+            list of models
+            
+        save : boolean
+            if save == True, then save it as .csv
+            
+        Returns
+        -------
+        DF2 : pandas.dataframe
+            append the mean, std of mean|SHAP value| in all_*_SHAP.csv
+        
+        """
+        DF2 = DF.copy()
+        for model in LIST:
+            name = model[0].replace('.sav','_All mean')
+            mean = [i.replace('.sav', ' mean') for i in model]
+            DF2[name] = DF2[mean].mean(axis=1)
+        for model in LIST:
+            name = model[0].replace('.sav','_All std')
+            std = [i.replace('.sav', ' std') for i in model]
+            DF2[name] = DF2[std].std(axis=1)
+            
+        if save == True:
+            save_path = f"{self.DATA_DIR}/posthoc/all_mofm_abs_SHAP.csv"
+            if not os.path.isdir(os.path.dirname(save_path)):
+                os.makedirs(os.path.dirname(save_path))
+            DF2.to_csv(save_path, index=None)
+        return DF2
+        
     def read_INSTRUMENT(self, instrument_file):
         """ Load the Instruemnt file
         
@@ -1711,6 +1878,32 @@ class IMAGEN_posthoc(INSTRUMENT_loader,HDF5_loader,RUN_loader,SHAP_loader):
         DF = pd.read_csv(run_path, low_memory=False)
         self.RUN = DF
         return self.RUN
+    
+    def read_SHAP(self, SHAP_file):
+        """ Load the SHAP file
+        
+        Parameters
+        ----------
+        SHAP_file : string
+            SHAP file
+            
+        Returns
+        -------
+        self.SHAP : pandas.dataframe
+            The SHAP file (*.csv)
+        
+        Example
+        -------
+        >>> from imagen_posthocloader import *
+        >>> DATA = SHAP_loader()
+        >>> DF = DATA.read_SHAP(
+        ...      SHAP_file)               # SHAP file
+        
+        """
+        SHAP_path = self.DATA_DIR+"/posthoc/"+SHAP_file
+        DF = pd.read_csv(SHAP_path, low_memory=False)
+        self.SHAP = DF
+        return self.SHAP
 
     def to_posthoc(self, DATA, save=False):
         """ Set the Posthoc file
