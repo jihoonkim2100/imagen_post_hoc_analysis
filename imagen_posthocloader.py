@@ -1393,7 +1393,7 @@ class SHAP_loader:
         X = INPUT[1]
         N = INPUT[2]
         # 100 instances for use as the background distribution
-        X100 = shap.utils.sample(X, len(X)) 
+        X100 = shap.utils.sample(X, len(X))
         for model_name in self.MODELS:
             if (model_name.upper() not in MODEL):
 #                 print(f"skipping model {model_name}")
@@ -1614,8 +1614,9 @@ class IMAGEN_posthoc(INSTRUMENT_loader,HDF5_loader,RUN_loader,SHAP_loader):
             DF2.to_csv(save_path, index=None)
         return self.RUN
     
-    def to_abs_SHAP(self, H5, SHAP, save=False):
+    def to_abs_SHAP(self, H5, SHAP, SESSION, save=False):
         """ Get the subtype and mean and std of |SHAP value| in given models
+            Get the std, and mean of mean|SHAP value| in given models
         
         Parameters
         ----------
@@ -1629,7 +1630,9 @@ class IMAGEN_posthoc(INSTRUMENT_loader,HDF5_loader,RUN_loader,SHAP_loader):
         Returns
         -------
         COL : pandas.dataframe
-            The std, mean |SHAP value|
+            Region category of the Feature
+            The mean, std |SHAP value|
+            The mean, std of mean |SHAP value|
 
         Examples
         --------
@@ -1732,51 +1735,71 @@ class IMAGEN_posthoc(INSTRUMENT_loader,HDF5_loader,RUN_loader,SHAP_loader):
                 {f'{Data} std' : std}
             )
             COL = pd.concat([COL, DF], axis=1)
-            
+        
+        # Columns: Mean and std of mean|SHAP|
+        COL[f'GB_{SESSION} all mean'] = COL[COL.columns[5:12]].mean(axis=1)
+        COL[f'LR_{SESSION} all mean'] = COL[COL.columns[12:19]].mean(axis=1)
+        COL[f'SVM-lin_{SESSION} all mean'] = COL[COL.columns[19:26]].mean(axis=1)
+        COL[f'SVM-rbf_{SESSION} all mean'] = COL[COL.columns[26:33]].mean(axis=1)
+        COL[f'GB_{SESSION} all std'] = COL[COL.columns[5:12]].std(axis=1)
+        COL[f'LR_{SESSION} all std'] = COL[COL.columns[12:19]].std(axis=1)
+        COL[f'SVM-lin_{SESSION} all std'] = COL[COL.columns[19:26]].std(axis=1)
+        COL[f'SVM-rbf_{SESSION} all std'] = COL[COL.columns[26:33]].std(axis=1)
+        
         if save == True:
-            save_path = f"{self.DATA_DIR}/posthoc/all_mean_abs_SHAP.csv"
+            save_path = f"{self.DATA_DIR}/posthoc/explainers/all_{SESSION}_SHAP.csv"
             if not os.path.isdir(os.path.dirname(save_path)):
                 os.makedirs(os.path.dirname(save_path))
             COL.to_csv(save_path, index=None)
         return COL
-    
-    def to_mofm_SHAP(self, DF, LIST, save = False):
-        """ Get the std, and mean of mean|SHAP value| in given models
+
+    def to_sorted_mean_SHAP(self, DF, MODEL, SESSION, save=False):
+        DF = DF.copy()
+        rbf0 = [list(x) for x in zip(DF['Feature name'], DF[f'{MODEL}0_{SESSION} mean'], DF[f'{MODEL}0_{SESSION} std'])]
+        rbf0.sort(key=lambda x:-x[1])
+        rbf1 = [list(x) for x in zip(DF['Feature name'], DF[f'{MODEL}1_{SESSION} mean'], DF[f'{MODEL}1_{SESSION} std'])]
+        rbf1.sort(key=lambda x:-x[1])
+        rbf2 = [list(x) for x in zip(DF['Feature name'], DF[f'{MODEL}2_{SESSION} mean'], DF[f'{MODEL}2_{SESSION} std'])]
+        rbf2.sort(key=lambda x:-x[1])
+        rbf3 = [list(x) for x in zip(DF['Feature name'], DF[f'{MODEL}3_{SESSION} mean'], DF[f'{MODEL}3_{SESSION} std'])]
+        rbf3.sort(key=lambda x:-x[1])
+        rbf4 = [list(x) for x in zip(DF['Feature name'], DF[f'{MODEL}4_{SESSION} mean'], DF[f'{MODEL}4_{SESSION} std'])]
+        rbf4.sort(key=lambda x:-x[1])
+        rbf5 = [list(x) for x in zip(DF['Feature name'], DF[f'{MODEL}5_{SESSION} mean'], DF[f'{MODEL}5_{SESSION} std'])]
+        rbf5.sort(key=lambda x:-x[1])
+        rbf6 = [list(x) for x in zip(DF['Feature name'], DF[f'{MODEL}6_{SESSION} mean'], DF[f'{MODEL}6_{SESSION} std'])]
+        rbf6.sort(key=lambda x:-x[1])
         
-        Parameters
-        ----------
-        DF : pandas.dataframe
-            all_*_SHAP*.csv expected
-            
-        LIST : list
-            list of models
-            
-        save : boolean
-            if save == True, then save it as .csv
-            
-        Returns
-        -------
-        DF2 : pandas.dataframe
-            append the mean, std of mean|SHAP value| in all_*_SHAP.csv
+        DF[f'sorted {MODEL}0_{SESSION} name'] = [i[0] for i in rbf0]
+        DF[f'sorted {MODEL}1_{SESSION} name'] = [i[0] for i in rbf1]
+        DF[f'sorted {MODEL}2_{SESSION} name'] = [i[0] for i in rbf2]
+        DF[f'sorted {MODEL}3_{SESSION} name'] = [i[0] for i in rbf3]
+        DF[f'sorted {MODEL}4_{SESSION} name'] = [i[0] for i in rbf4]
+        DF[f'sorted {MODEL}5_{SESSION} name'] = [i[0] for i in rbf5]
+        DF[f'sorted {MODEL}6_{SESSION} name'] = [i[0] for i in rbf6]
         
-        """
-        DF2 = DF.copy()
-        for model in LIST:
-            name = model[0].replace('.sav','_All mean')
-            mean = [i.replace('.sav', ' mean') for i in model]
-            DF2[name] = DF2[mean].mean(axis=1)
-        for model in LIST:
-            name = model[0].replace('.sav','_All std')
-            std = [i.replace('.sav', ' std') for i in model]
-            DF2[name] = DF2[std].std(axis=1)
-            
+        DF[f'sorted {MODEL}0_{SESSION} mean'] = [i[1] for i in rbf0]
+        DF[f'sorted {MODEL}1_{SESSION} mean'] = [i[1] for i in rbf1]
+        DF[f'sorted {MODEL}2_{SESSION} mean'] = [i[1] for i in rbf2]
+        DF[f'sorted {MODEL}3_{SESSION} mean'] = [i[1] for i in rbf3]
+        DF[f'sorted {MODEL}4_{SESSION} mean'] = [i[1] for i in rbf4]
+        DF[f'sorted {MODEL}5_{SESSION} mean'] = [i[1] for i in rbf5]
+        DF[f'sorted {MODEL}6_{SESSION} mean'] = [i[1] for i in rbf6]
+        
+        DF[f'sorted {MODEL}0_{SESSION} std'] = [i[2] for i in rbf0]
+        DF[f'sorted {MODEL}1_{SESSION} std'] = [i[2] for i in rbf1]
+        DF[f'sorted {MODEL}2_{SESSION} std'] = [i[2] for i in rbf2]
+        DF[f'sorted {MODEL}3_{SESSION} std'] = [i[2] for i in rbf3]
+        DF[f'sorted {MODEL}4_{SESSION} std'] = [i[2] for i in rbf4]
+        DF[f'sorted {MODEL}5_{SESSION} std'] = [i[2] for i in rbf5]
+        DF[f'sorted {MODEL}6_{SESSION} std'] = [i[2] for i in rbf6]
         if save == True:
-            save_path = f"{self.DATA_DIR}/posthoc/all_mofm_abs_SHAP.csv"
+            save_path = f"{self.DATA_DIR}/posthoc/sorted_{MODEL}_{SESSION}_SHAP.csv"
             if not os.path.isdir(os.path.dirname(save_path)):
                 os.makedirs(os.path.dirname(save_path))
-            DF2.to_csv(save_path, index=None)
-        return DF2
-        
+            DF.to_csv(save_path, index=None)
+        return DF
+            
     def read_INSTRUMENT(self, instrument_file):
         """ Load the Instruemnt file
         
@@ -1900,7 +1923,7 @@ class IMAGEN_posthoc(INSTRUMENT_loader,HDF5_loader,RUN_loader,SHAP_loader):
         ...      SHAP_file)               # SHAP file
         
         """
-        SHAP_path = self.DATA_DIR+"/posthoc/"+SHAP_file
+        SHAP_path = self.DATA_DIR+"/posthoc/explainers/"+SHAP_file
         DF = pd.read_csv(SHAP_path, low_memory=False)
         self.SHAP = DF
         return self.SHAP
