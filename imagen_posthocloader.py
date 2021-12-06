@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 from glob import glob
 from joblib import load
+from sklearn.preprocessing import StandardScaler
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -1497,6 +1498,60 @@ class SHAP_loader:
             if not os.path.isdir(os.path.dirname(save_path)):
                 os.makedirs(os.path.dirname(save_path))
             DF.to_csv(save_path, index=None)
+        return DF
+    
+    def load_POS_Feature(self, HDF5, SHAP):
+        """ Generate the pandas dataframe of the Feature value which above 0 of the SHAP vlaues
+        
+        Parameters
+        ----------
+        HDF5 : .hdf5 file
+            Load the X_Col_names value
+            
+        SHAP : .sav file
+            Load the SHAP value
+        
+        Returns
+        -------
+        DF : pandas.dataframe
+            Feature values, only SHAP values > 0 above, dataframe
+        
+        Examples
+        --------
+        >>> from imagen_posthocloader import *
+        >>> DATA = SHAP_loader()
+        >>> mean_SHAP, std_SHAP = DATA.load_POS_Feature(
+        ...     SHAP                      # SHAP    
+        ...     save=False)               # Save
+        
+        """
+        # load the X_col_name
+        _, X_col, _ = self.get_holdout_data(HDF5)
+        
+        # load the data
+        SHAP = f"{self.DATA_DIR}/posthoc/explainers/{SHAP}"
+        with open(SHAP, 'rb') as fp:
+            load_shap_values = pickle.load(fp)
+            
+        data = load_shap_values.data
+        
+        # load the standardized values
+        scaler = StandardScaler()
+        scaler.fit(data)
+        new_data = scaler.transform(data)
+        df = pd.DataFrame(new_data, columns=X_col)
+        
+        # load the SHAP values
+        new_shap = load_shap_values.values
+        df2 = pd.DataFrame(new_shap, columns=X_col)
+        df3 = np.sign(df2)
+        df4 = pd.DataFrame()
+        for i in df3.columns:
+            df4[i] = df3[i].apply(lambda x: 1 if x > 0 else np.NaN)
+        
+        # generate the feature values
+        DF = df4*df
+        
         return DF
 
 class IMAGEN_posthoc(INSTRUMENT_loader,HDF5_loader,RUN_loader,SHAP_loader):
