@@ -42,3 +42,5 @@ Visualize the relative importance of the different structural features and their
 <br>
 ### Preprocessing
 Preprocess the Instrument https://imagen-europe.com/resources/imagen-dataset/documentation/ and post hoc dataset; HDF5, RUN file, and generate the SHAP derivatives dataset.
+
+The further information can be found in https://github.com/RoshanRane/imagen_ml
