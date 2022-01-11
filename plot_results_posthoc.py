@@ -2,12 +2,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 """ IMAGEN Posthoc Analysis Visualization """
-# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 4th November 2021
+# Author: JiHoon Kim, <jihoon.kim@fu-berlin.de>, 23th November 2021
 #
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy import stats
 
 from scipy.stats import shapiro, levene, ttest_ind, bartlett
 from statannot import add_stat_annotation
@@ -476,31 +477,31 @@ def plot_SHAP(MODEL, DATA, PLOT):
     # plot: summary_plot bar, dot and summary_plot
     pass
 
-def SHAP_table(DF, viz = False):
+def SHAP_table(DF, SESSION, viz = False):
     # DTI type
-    DTI0 = [i for i in zip(DF['sorted SVM rbf0 name'], DF['sorted SVM rbf0 mean'], DF['sorted SVM rbf0 std']) if 'DTI_' in i[0]]
-    DTI1 = [i for i in zip(DF['sorted SVM rbf1 name'], DF['sorted SVM rbf1 mean'], DF['sorted SVM rbf1 std']) if 'DTI_' in i[0]]
-    DTI2 = [i for i in zip(DF['sorted SVM rbf2 name'], DF['sorted SVM rbf2 mean'], DF['sorted SVM rbf2 std']) if 'DTI_' in i[0]]
-    DTI3 = [i for i in zip(DF['sorted SVM rbf3 name'], DF['sorted SVM rbf3 mean'], DF['sorted SVM rbf3 std']) if 'DTI_' in i[0]]
-    DTI4 = [i for i in zip(DF['sorted SVM rbf4 name'], DF['sorted SVM rbf4 mean'], DF['sorted SVM rbf4 std']) if 'DTI_' in i[0]]
-    DTI5 = [i for i in zip(DF['sorted SVM rbf5 name'], DF['sorted SVM rbf5 mean'], DF['sorted SVM rbf5 std']) if 'DTI_' in i[0]]
-    DTI6 = [i for i in zip(DF['sorted SVM rbf6 name'], DF['sorted SVM rbf6 mean'], DF['sorted SVM rbf6 std']) if 'DTI_' in i[0]]
+    DTI0 = [i for i in zip(DF[f'sorted SVM-rbf0_{SESSION} name'], DF[f'sorted SVM-rbf0_{SESSION} mean'], DF[f'sorted SVM-rbf0_{SESSION} std']) if 'DTI_' in i[0]]
+    DTI1 = [i for i in zip(DF[f'sorted SVM-rbf1_{SESSION} name'], DF[f'sorted SVM-rbf1_{SESSION} mean'], DF[f'sorted SVM-rbf1_{SESSION} std']) if 'DTI_' in i[0]]
+    DTI2 = [i for i in zip(DF[f'sorted SVM-rbf2_{SESSION} name'], DF[f'sorted SVM-rbf2_{SESSION} mean'], DF[f'sorted SVM-rbf2_{SESSION} std']) if 'DTI_' in i[0]]
+    DTI3 = [i for i in zip(DF[f'sorted SVM-rbf3_{SESSION} name'], DF[f'sorted SVM-rbf3_{SESSION} mean'], DF[f'sorted SVM-rbf3_{SESSION} std']) if 'DTI_' in i[0]]
+    DTI4 = [i for i in zip(DF[f'sorted SVM-rbf4_{SESSION} name'], DF[f'sorted SVM-rbf4_{SESSION} mean'], DF[f'sorted SVM-rbf4_{SESSION} std']) if 'DTI_' in i[0]]
+    DTI5 = [i for i in zip(DF[f'sorted SVM-rbf5_{SESSION} name'], DF[f'sorted SVM-rbf5_{SESSION} mean'], DF[f'sorted SVM-rbf5_{SESSION} std']) if 'DTI_' in i[0]]
+    DTI6 = [i for i in zip(DF[f'sorted SVM-rbf6_{SESSION} name'], DF[f'sorted SVM-rbf6_{SESSION} mean'], DF[f'sorted SVM-rbf6_{SESSION} std']) if 'DTI_' in i[0]]
     # T1w Subcortical type
-    SUBCOR0 = [i for i in zip(DF['sorted SVM rbf0 name'], DF['sorted SVM rbf0 mean'], DF['sorted SVM rbf0 std']) if 'T1w_subcor_' in i[0]]
-    SUBCOR1 = [i for i in zip(DF['sorted SVM rbf1 name'], DF['sorted SVM rbf1 mean'], DF['sorted SVM rbf1 std']) if 'T1w_subcor_' in i[0]]
-    SUBCOR2 = [i for i in zip(DF['sorted SVM rbf2 name'], DF['sorted SVM rbf2 mean'], DF['sorted SVM rbf2 std']) if 'T1w_subcor_' in i[0]]
-    SUBCOR3 = [i for i in zip(DF['sorted SVM rbf3 name'], DF['sorted SVM rbf3 mean'], DF['sorted SVM rbf3 std']) if 'T1w_subcor_' in i[0]]
-    SUBCOR4 = [i for i in zip(DF['sorted SVM rbf4 name'], DF['sorted SVM rbf4 mean'], DF['sorted SVM rbf4 std']) if 'T1w_subcor_' in i[0]]
-    SUBCOR5 = [i for i in zip(DF['sorted SVM rbf5 name'], DF['sorted SVM rbf5 mean'], DF['sorted SVM rbf5 std']) if 'T1w_subcor_' in i[0]]
-    SUBCOR6 = [i for i in zip(DF['sorted SVM rbf6 name'], DF['sorted SVM rbf6 mean'], DF['sorted SVM rbf6 std']) if 'T1w_subcor_' in i[0]]
+    SUBCOR0 = [i for i in zip(DF[f'sorted SVM-rbf0_{SESSION} name'], DF[f'sorted SVM-rbf0_{SESSION} mean'], DF[f'sorted SVM-rbf0_{SESSION} std']) if 'T1w_subcor_' in i[0]]
+    SUBCOR1 = [i for i in zip(DF[f'sorted SVM-rbf1_{SESSION} name'], DF[f'sorted SVM-rbf1_{SESSION} mean'], DF[f'sorted SVM-rbf1_{SESSION} std']) if 'T1w_subcor_' in i[0]]
+    SUBCOR2 = [i for i in zip(DF[f'sorted SVM-rbf2_{SESSION} name'], DF[f'sorted SVM-rbf2_{SESSION} mean'], DF[f'sorted SVM-rbf2_{SESSION} std']) if 'T1w_subcor_' in i[0]]
+    SUBCOR3 = [i for i in zip(DF[f'sorted SVM-rbf3_{SESSION} name'], DF[f'sorted SVM-rbf3_{SESSION} mean'], DF[f'sorted SVM-rbf3_{SESSION} std']) if 'T1w_subcor_' in i[0]]
+    SUBCOR4 = [i for i in zip(DF[f'sorted SVM-rbf4_{SESSION} name'], DF[f'sorted SVM-rbf4_{SESSION} mean'], DF[f'sorted SVM-rbf4_{SESSION} std']) if 'T1w_subcor_' in i[0]]
+    SUBCOR5 = [i for i in zip(DF[f'sorted SVM-rbf5_{SESSION} name'], DF[f'sorted SVM-rbf5_{SESSION} mean'], DF[f'sorted SVM-rbf5_{SESSION} std']) if 'T1w_subcor_' in i[0]]
+    SUBCOR6 = [i for i in zip(DF[f'sorted SVM-rbf6_{SESSION} name'], DF[f'sorted SVM-rbf6_{SESSION} mean'], DF[f'sorted SVM-rbf6_{SESSION} std']) if 'T1w_subcor_' in i[0]]
     # T2w Subcortical type
-    COR0 = [i for i in zip(DF['sorted SVM rbf0 name'], DF['sorted SVM rbf0 mean'], DF['sorted SVM rbf0 std']) if 'T1w_cor_' in i[0]]
-    COR1 = [i for i in zip(DF['sorted SVM rbf1 name'], DF['sorted SVM rbf1 mean'], DF['sorted SVM rbf1 std']) if 'T1w_cor_' in i[0]]
-    COR2 = [i for i in zip(DF['sorted SVM rbf2 name'], DF['sorted SVM rbf2 mean'], DF['sorted SVM rbf2 std']) if 'T1w_cor_' in i[0]]
-    COR3 = [i for i in zip(DF['sorted SVM rbf3 name'], DF['sorted SVM rbf3 mean'], DF['sorted SVM rbf3 std']) if 'T1w_cor_' in i[0]]
-    COR4 = [i for i in zip(DF['sorted SVM rbf4 name'], DF['sorted SVM rbf4 mean'], DF['sorted SVM rbf4 std']) if 'T1w_cor_' in i[0]]
-    COR5 = [i for i in zip(DF['sorted SVM rbf5 name'], DF['sorted SVM rbf5 mean'], DF['sorted SVM rbf5 std']) if 'T1w_cor_' in i[0]]
-    COR6 = [i for i in zip(DF['sorted SVM rbf6 name'], DF['sorted SVM rbf6 mean'], DF['sorted SVM rbf6 std']) if 'T1w_cor_' in i[0]]
+    COR0 = [i for i in zip(DF[f'sorted SVM-rbf0_{SESSION} name'], DF[f'sorted SVM-rbf0_{SESSION} mean'], DF[f'sorted SVM-rbf0_{SESSION} std']) if 'T1w_cor_' in i[0]]
+    COR1 = [i for i in zip(DF[f'sorted SVM-rbf1_{SESSION} name'], DF[f'sorted SVM-rbf1_{SESSION} mean'], DF[f'sorted SVM-rbf1_{SESSION} std']) if 'T1w_cor_' in i[0]]
+    COR2 = [i for i in zip(DF[f'sorted SVM-rbf2_{SESSION} name'], DF[f'sorted SVM-rbf2_{SESSION} mean'], DF[f'sorted SVM-rbf2_{SESSION} std']) if 'T1w_cor_' in i[0]]
+    COR3 = [i for i in zip(DF[f'sorted SVM-rbf3_{SESSION} name'], DF[f'sorted SVM-rbf3_{SESSION} mean'], DF[f'sorted SVM-rbf3_{SESSION} std']) if 'T1w_cor_' in i[0]]
+    COR4 = [i for i in zip(DF[f'sorted SVM-rbf4_{SESSION} name'], DF[f'sorted SVM-rbf4_{SESSION} mean'], DF[f'sorted SVM-rbf4_{SESSION} std']) if 'T1w_cor_' in i[0]]
+    COR5 = [i for i in zip(DF[f'sorted SVM-rbf5_{SESSION} name'], DF[f'sorted SVM-rbf5_{SESSION} mean'], DF[f'sorted SVM-rbf5_{SESSION} std']) if 'T1w_cor_' in i[0]]
+    COR6 = [i for i in zip(DF[f'sorted SVM-rbf6_{SESSION} name'], DF[f'sorted SVM-rbf6_{SESSION} mean'], DF[f'sorted SVM-rbf6_{SESSION} std']) if 'T1w_cor_' in i[0]]
     # Common Features
     set_DTI = (set([i[0] for i in DTI0]) & set([i[0] for i in DTI1])  & set([i[0] for i in DTI2]) & set([i[0] for i in DTI3]) &
                set([i[0] for i in DTI4]) & set([i[0] for i in DTI5]) & set([i[0] for i in DTI6]))
