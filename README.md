@@ -16,18 +16,29 @@ Those are required to run this module: <br>
     - statannot                          0.2.3 <br>
     - statsmodels                        0.12.2 <br>
 
-### Preprocessing
+The preliminary results in our IMAGEN paper adcovates for a more in-depth understanding of what contributes to the significant performance of the ML models for the three time points:
+- Baseline (BL), Age 14 <br>
+- Follow 1 year (FU1), Age 16 <br>
+- Follow 2 year (FU2), Age 19 <br>
+- Follow 3 year (FU3), Age 22 <br>
 
-
-
-
-
-### Analysis
-
-
-
-
-
+Such in-depth understaning can be acheived by performing follow-up analysis such as:
+<br>
+### Summary Statistics
+<b>Compare</b> the different instruments suchh as personality traits, socio-demographic, life history, and so on between the two groups = Aldolescents Alcohol Misuse(AAM) and Healthy Control (HC).
+<br>
+<br>
+### Senstivity Analysis
+Test the robustness of the result: Did we overfit? Was the influence of confound 'site' really removed?
+<br>
+<br>
+### Error Analysis
+Error analysis of the model prediction to understand which and why the model performs well on some subjects and bad on some others with Instrument
+<br>
+<br>
 ### Visualization
-
-
+Visualize the relative importance of the different structural features and their contribution to the model performance using methods such as SHAP values (lundberg 2017)
+<br>
+<br>
+### Preprocessing
+Preprocess the Instrument https://imagen-europe.com/resources/imagen-dataset/documentation/ and post hoc dataset; HDF5, RUN file, and generate the SHAP derivatives dataset.
